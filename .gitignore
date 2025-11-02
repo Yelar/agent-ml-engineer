@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+env/
+ENV/
+virtualenv/
+.venv
+venv
+env
+ENV
+runs/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
