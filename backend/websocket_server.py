@@ -8,6 +8,7 @@ import asyncio
 import json
 import re
 import uuid
+import logging
 from typing import Dict
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
@@ -18,6 +19,17 @@ from ml_engineer.agent import MLEngineerAgent
 from ml_engineer.datasets import DatasetResolver
 from ml_engineer.python_executor import get_execution_history
 from ml_engineer.config import Config
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('websocket_server.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 
 app = FastAPI(title="ML Engineer Agent WebSocket Server")
@@ -95,9 +107,36 @@ class AgentStreamer:
         """Send final answer to chat"""
         await self.send_message("final_answer", content)
     
+    def _extract_accuracy_metrics(self, output: str) -> Dict[str, str]:
+        """Extract accuracy metrics from execution output"""
+        metrics = {}
+        
+        # Patterns to match common accuracy metrics
+        patterns = {
+            'accuracy': r'(?:accuracy|Accuracy|ACCURACY)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'f1_score': r'(?:f1[_\s-]?score|F1[_\s-]?Score|F1[_\s-]?SCORE)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'precision': r'(?:precision|Precision|PRECISION)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'recall': r'(?:recall|Recall|RECALL)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'r2_score': r'(?:r2[_\s-]?score|R2[_\s-]?Score|R²)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'mae': r'(?:mae|MAE|mean[_\s-]?absolute[_\s-]?error)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'rmse': r'(?:rmse|RMSE|root[_\s-]?mean[_\s-]?squared[_\s-]?error)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'test_accuracy': r'(?:test[_\s-]?accuracy|Test[_\s-]?Accuracy)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+            'train_accuracy': r'(?:train[_\s-]?accuracy|Train[_\s-]?Accuracy)[:\s=]+([0-9.]+(?:\s*%|[eE][+-]?\d+)?)',
+        }
+        
+        for metric_name, pattern in patterns.items():
+            match = re.search(pattern, output, re.IGNORECASE)
+            if match:
+                metrics[metric_name] = match.group(1).strip()
+        
+        return metrics
+
     async def process_agent_output(self, agent: MLEngineerAgent, prompt: str):
         """Process agent execution and stream to frontend"""
         try:
+            logger.info(f"Starting agent execution - Session: {self.session_id}, Dataset: {agent.dataset_name}")
+            logger.info(f"Task: {prompt}")
+            
             # Send initial status
             await self.append_markdown(
                 f"# Starting Analysis\n\n**Dataset:** {agent.dataset_name}\n\n**Task:** {prompt}\n\n---"
@@ -106,45 +145,33 @@ class AgentStreamer:
             # Track what we've sent
             plan_sent = False
             code_block_count = 0
+            iteration_count = 0
             
             # Initialize the agent's workflow
             agent._setup_workflow()
+            logger.info("Agent workflow initialized")
             
-            # Load dataset(s)
+            # Load dataset
             from ml_engineer.datasets import load_dataset
             from ml_engineer.python_executor import inject_variables, clear_namespace, clear_history
             
             clear_namespace()
             clear_history()
             
-            # Handle single or multiple datasets
-            if agent.multiple_datasets:
-                # Load multiple datasets
-                variables = {}
-                for i, (dataset_path, dataset_name) in enumerate(zip(agent.dataset_paths, agent.dataset_names)):
-                    df = load_dataset(dataset_path)
-                    variables[f'df{i+1}' if i > 0 else 'df'] = df
-                    variables[f'DATASET_PATH{i+1}' if i > 0 else 'DATASET_PATH'] = str(dataset_path)
-                # Add common libraries
-                variables.update({
-                    'pd': __import__('pandas'),
-                    'np': __import__('numpy'),
-                    'plt': __import__('matplotlib.pyplot'),
-                    'sns': __import__('seaborn'),
-                })
-                inject_variables(variables)
-            else:
-                # Single dataset (most common case)
-                df = load_dataset(agent.dataset_paths[0])
-                inject_variables({
-                    'df': df,
-                    'DATASET_PATH': str(agent.dataset_paths[0]),
-                    'pd': __import__('pandas'),
-                    'np': __import__('numpy'),
-                    'plt': __import__('matplotlib.pyplot'),
-                    'sns': __import__('seaborn'),
-                })
+            namespace_variables = {
+                'pd': __import__('pandas'),
+                'np': __import__('numpy'),
+                'plt': __import__('matplotlib.pyplot'),
+                'sns': __import__('seaborn'),
+            }
 
+            namespace_variables.update(agent.get_dataset_path_variables())
+
+            if not agent.multiple_datasets:
+                namespace_variables['df'] = load_dataset(agent.primary_dataset_path)
+
+            inject_variables(namespace_variables)
+            logger.info("Dataset loaded and namespace initialized")
             
             # Create initial messages
             from langchain_core.messages import SystemMessage, HumanMessage
@@ -157,78 +184,142 @@ class AgentStreamer:
                 "next_step": None
             }
             
+            logger.info("Starting LangGraph workflow stream")
+            
             # Stream the workflow
             for event in agent.app.stream(initial_state):
-                if "generate" in event:
-                    # Process AI messages
-                    state = event["generate"]
-                    messages = state.get("messages", [])
-                    if messages:
-                        last_msg = messages[-1]
-                        if hasattr(last_msg, "content") and last_msg.content:
-                            content = last_msg.content
-                            
-                            # Extract plan
-                            if not plan_sent:
-                                plan_match = re.search(
-                                    r'<plan>(.*?)</plan>', 
+                # Log LangGraph node execution
+                # Event is a dict with single key-value pair: {node_name: state}
+                for node_name, node_state in event.items():
+                    logger.info(f"🔀 LangGraph Node: {node_name}")
+                    
+                    if node_name == "generate":
+                        iteration_count += 1
+                        logger.info(f"📝 Iteration {iteration_count}/{agent.max_iterations} - GENERATE Node")
+                        
+                        # Process AI messages
+                        state = node_state
+                        messages = state.get("messages", [])
+                        if messages:
+                            last_msg = messages[-1]
+                            if hasattr(last_msg, "content") and last_msg.content:
+                                content = last_msg.content
+                                
+                                # Log tool calls if any
+                                if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                                    tool_names = [tc.get("name", "unknown") for tc in last_msg.tool_calls]
+                                    logger.info(f"🔧 Tool calls requested: {', '.join(tool_names)}")
+                                    for i, tool_call in enumerate(last_msg.tool_calls, 1):
+                                        logger.info(f"   Tool {i}: {tool_call.get('name')} - Args: {list(tool_call.get('args', {}).keys())}")
+                                
+                                # Extract plan
+                                if not plan_sent:
+                                    plan_match = re.search(
+                                        r'<plan>(.*?)</plan>', 
+                                        content, 
+                                        re.DOTALL | re.IGNORECASE
+                                    )
+                                    if plan_match:
+                                        plan = plan_match.group(1).strip()
+                                        logger.info("📋 Plan extracted and sent to frontend")
+                                        await self.append_markdown(
+                                            f"## 📋 Execution Plan\n\n{plan}"
+                                        )
+                                        plan_sent = True
+                                
+                                # Extract thinking
+                                think_match = re.search(
+                                    r'<think>(.*?)</think>', 
                                     content, 
                                     re.DOTALL | re.IGNORECASE
                                 )
-                                if plan_match:
-                                    plan = plan_match.group(1).strip()
+                                if think_match:
+                                    thinking = think_match.group(1).strip()
+                                    logger.info("🤔 Agent reasoning extracted")
                                     await self.append_markdown(
-                                        f"## 📋 Execution Plan\n\n{plan}"
+                                        f"## 🤔 Agent Thinking\n\n{thinking}\n\n---"
                                     )
-                                    plan_sent = True
-                            
-                            # Extract thinking
-                            think_match = re.search(
-                                r'<think>(.*?)</think>', 
-                                content, 
-                                re.DOTALL | re.IGNORECASE
-                            )
-                            if think_match:
-                                thinking = think_match.group(1).strip()
-                                await self.append_markdown(
-                                    f"## 🤔 Agent Thinking\n\n{thinking}\n\n---"
-                                )
-                
-                elif "execute_tools" in event:
-                    # Process tool executions
-                    state = event["execute_tools"]
-                    messages = state.get("messages", [])
                     
-                    # Get execution history to find new code blocks
-                    history = get_execution_history()
-                    
-                    # Send any new code blocks
-                    if len(history) > code_block_count:
-                        for execution in history[code_block_count:]:
-                            code_block_count += 1
-                            await self.append_code_block(
-                                execution["code"],
-                                f"code-{code_block_count}"
-                            )
-                            
-                            # Show output if available
-                            output = execution.get("output", "")
-                            if output and output.strip():
-                                # Truncate long outputs
-                                display_output = output[:1000]
-                                if len(output) > 1000:
-                                    display_output += "\n... (truncated)"
+                    elif node_name == "execute_tools":
+                        logger.info(f"⚙️  EXECUTE_TOOLS Node - Running tools")
+                        
+                        # Process tool executions
+                        state = node_state
+                        messages = state.get("messages", [])
+                        
+                        # Get execution history to find new code blocks
+                        history = get_execution_history()
+                        
+                        # Send any new code blocks
+                        if len(history) > code_block_count:
+                            for execution in history[code_block_count:]:
+                                code_block_count += 1
                                 
-                                await self.append_markdown(
-                                    f"**Output:**\n```\n{display_output}\n```"
+                                # Log code execution
+                                code = execution.get("code", "")
+                                logger.info(f"💻 Code Execution #{code_block_count}")
+                                logger.info(f"   Code snippet: {code[:200]}..." if len(code) > 200 else f"   Code: {code}")
+                                
+                                await self.append_code_block(
+                                    code,
+                                    f"code-{code_block_count}"
                                 )
+                                
+                                # Log execution results
+                                output = execution.get("output", "")
+                                error = execution.get("error", "")
+                                success = execution.get("success", False)
+                                plots_count = len(execution.get("plots", []))
+                                
+                                if success:
+                                    logger.info(f"   ✅ Execution successful")
+                                    if output:
+                                        logger.info(f"   Output length: {len(output)} chars")
+                                    if plots_count > 0:
+                                        logger.info(f"   📊 Generated {plots_count} plot(s)")
+                                    
+                                    # Extract accuracy metrics
+                                    if output:
+                                        metrics = self._extract_accuracy_metrics(output)
+                                        if metrics:
+                                            metrics_str = ", ".join([f"{k}={v}" for k, v in metrics.items()])
+                                            logger.info(f"   📈 Model Metrics: {metrics_str}")
+                                            
+                                            # Display metrics in markdown
+                                            metrics_display = "\n".join([f"- **{k.replace('_', ' ').title()}:** {v}" for k, v in metrics.items()])
+                                            await self.append_markdown(
+                                                f"## 📈 Model Performance Metrics\n\n{metrics_display}\n\n---"
+                                            )
+                                else:
+                                    logger.warning(f"   ❌ Execution failed: {error[:200]}")
+                                
+                                # Show output if available
+                                if output and output.strip():
+                                    # Truncate long outputs for display
+                                    display_output = output[:1000]
+                                    if len(output) > 1000:
+                                        display_output += "\n... (truncated)"
+                                    
+                                    logger.debug(f"   Full output: {output[:500]}..." if len(output) > 500 else f"   Output: {output}")
+                                    
+                                    await self.append_markdown(
+                                        f"**Output:**\n```\n{display_output}\n```"
+                                    )
+                                
+                                # Log full output to file if there's an error
+                                if error:
+                                    logger.error(f"   Error details: {error}")
                 
                 # Small delay for UI updates
                 await asyncio.sleep(0.1)
             
             # Get final solution from last message
-            final_state = event.get("generate", event.get("execute_tools", {}))
+            # Get the last event's state
+            final_node_name = list(event.keys())[0] if event else None
+            final_state = event.get(final_node_name, {}) if final_node_name else {}
             messages = final_state.get("messages", [])
+            
+            logger.info(f"🏁 LangGraph workflow completed - Total iterations: {iteration_count}")
             
             solution = "Analysis complete!"
             if messages:
@@ -241,19 +332,42 @@ class AgentStreamer:
                     )
                     if solution_match:
                         solution = solution_match.group(1).strip()
+                        logger.info("✅ Final solution extracted")
             
-            # Get final code block count
+            # Get final code block count and extract final metrics
             history = get_execution_history()
             
+            # Extract accuracy from all executions
+            all_metrics = {}
+            for exec_item in history:
+                output = exec_item.get("output", "")
+                if output:
+                    exec_metrics = self._extract_accuracy_metrics(output)
+                    if exec_metrics:
+                        all_metrics.update(exec_metrics)
+            
+            if all_metrics:
+                metrics_summary = ", ".join([f"{k}={v}" for k, v in all_metrics.items()])
+                logger.info(f"📊 Final Model Metrics Summary: {metrics_summary}")
+            
+            # Log final summary
+            logger.info(f"📊 Execution Summary:")
+            logger.info(f"   - Total iterations: {iteration_count}")
+            logger.info(f"   - Code blocks executed: {len(history)}")
+            logger.info(f"   - Models trained: {len(all_metrics) > 0}")
+            
             # Send solution as final answer
-            await self.send_final_answer(
-                f"✅ **Analysis Complete**\n\n{solution}\n\n"
-                f"💻 Executed {len(history)} code block(s)"
-            )
+            final_message = f"✅ **Analysis Complete**\n\n{solution}\n\n💻 Executed {len(history)} code block(s)"
+            if all_metrics:
+                metrics_display = "\n".join([f"- **{k.replace('_', ' ').title()}:** {v}" for k, v in all_metrics.items()])
+                final_message += f"\n\n📈 **Final Model Performance:**\n{metrics_display}"
+            
+            await self.send_final_answer(final_message)
             
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
+            logger.error(f"❌ Error in process_agent_output: {error_trace}")
             print(f"Error in process_agent_output: {error_trace}")
             await self.send_final_answer(
                 f"❌ Error during execution: {str(e)}"
@@ -275,6 +389,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     
     streamer = AgentStreamer(websocket, session_id)
     
+    logger.info(f"✅ Client connected: {session_id}")
     print(f"✅ Client connected: {session_id}")
     
     try:
@@ -283,6 +398,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
             data = await websocket.receive_text()
             message = json.loads(data)
             
+            logger.info(f"📨 Received message type: {message.get('type')}")
             print(f"📨 Received: {message.get('type')}")
             
             if message.get("type") == "user_message":
@@ -337,9 +453,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     )
     
     except WebSocketDisconnect:
+        logger.info(f"❌ Client disconnected: {session_id}")
         print(f"❌ Client disconnected: {session_id}")
         sessions.pop(session_id, None)
     except Exception as e:
+        logger.error(f"❌ Error in websocket_endpoint: {e}", exc_info=True)
         print(f"❌ Error: {e}")
         sessions.pop(session_id, None)
 

@@ -1,0 +1,778 @@
+2025-11-02 15:56:52,303 - __main__ - INFO - ✅ Client connected: 3af1ff2b-38fa-4e4c-b4d1-b60dcaf3a250
+2025-11-02 15:56:56,611 - __main__ - INFO - ❌ Client disconnected: 3af1ff2b-38fa-4e4c-b4d1-b60dcaf3a250
+2025-11-02 15:56:57,294 - __main__ - INFO - ✅ Client connected: 3af1ff2b-38fa-4e4c-b4d1-b60dcaf3a250
+2025-11-02 15:56:58,156 - __main__ - INFO - 📨 Received message type: user_message
+2025-11-02 15:56:58,414 - __main__ - INFO - Starting agent execution - Session: 3af1ff2b-38fa-4e4c-b4d1-b60dcaf3a250, Dataset: sample_sales
+2025-11-02 15:56:58,414 - __main__ - INFO - Task: test
+2025-11-02 15:56:58,417 - __main__ - INFO - Agent workflow initialized
+2025-11-02 15:56:59,720 - __main__ - INFO - Dataset loaded and namespace initialized
+2025-11-02 15:56:59,720 - __main__ - INFO - Starting LangGraph workflow stream
+2025-11-02 15:57:15,787 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 15:57:15,802 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 15:57:15,802 - __main__ - INFO - 📝 Iteration 1/12 - GENERATE Node
+2025-11-02 15:57:15,803 - __main__ - INFO - 🔧 Tool calls requested: dataset_info
+2025-11-02 15:57:15,803 - __main__ - INFO -    Tool 1: dataset_info - Args: ['dataset_path']
+2025-11-02 15:57:15,803 - __main__ - INFO - 📋 Plan extracted and sent to frontend
+2025-11-02 15:57:15,803 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 15:57:15,926 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 15:57:15,926 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 15:57:58,473 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 15:57:58,477 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 15:57:58,478 - __main__ - INFO - 📝 Iteration 2/12 - GENERATE Node
+2025-11-02 15:57:58,478 - __main__ - INFO - 🔧 Tool calls requested: execute_python
+2025-11-02 15:57:58,478 - __main__ - INFO -    Tool 1: execute_python - Args: ['code']
+2025-11-02 15:57:58,478 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 15:57:59,496 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 15:57:59,496 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 15:57:59,496 - __main__ - INFO - 💻 Code Execution #1
+2025-11-02 15:57:59,496 - __main__ - INFO -    Code snippet: # Imports and data loading
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+# Load dataset
+DATASET_PATH = "/Users/assanali.aukenov...
+2025-11-02 15:57:59,496 - __main__ - INFO -    ✅ Execution successful
+2025-11-02 15:57:59,496 - __main__ - INFO -    Output length: 1964 chars
+2025-11-02 15:57:59,498 - __main__ - ERROR -    Error details: <string>:34: FutureWarning: 
+
+The `ci` parameter is deprecated. Use `errorbar=None` for the same effect.
+
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/metrics/_regression.py:1266: UndefinedMetricWarning: R^2 score is not well-defined with less than two samples.
+  warnings.warn(msg, UndefinedMetricWarning)
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+
+2025-11-02 15:58:18,686 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 15:58:18,691 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 15:58:18,692 - __main__ - INFO - 📝 Iteration 3/12 - GENERATE Node
+2025-11-02 15:58:18,692 - __main__ - INFO - 🔧 Tool calls requested: execute_python
+2025-11-02 15:58:18,692 - __main__ - INFO -    Tool 1: execute_python - Args: ['code']
+2025-11-02 15:58:18,692 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 15:58:18,937 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 15:58:18,937 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 15:58:18,937 - __main__ - INFO - 💻 Code Execution #2
+2025-11-02 15:58:18,937 - __main__ - INFO -    Code snippet: from sklearn.model_selection import KFold
+from sklearn.metrics import mean_squared_error
+
+# Update barplot to avoid deprecation in future runs
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+pl...
+2025-11-02 15:58:18,937 - __main__ - WARNING -    ❌ Execution failed: AttributeError: 'float' object has no attribute 'round'
+Traceback (most recent call last):
+  File "/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/ml_engineer/python_executor.py", line 114,
+2025-11-02 15:58:18,937 - __main__ - ERROR -    Error details: AttributeError: 'float' object has no attribute 'round'
+Traceback (most recent call last):
+  File "/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/ml_engineer/python_executor.py", line 114, in run_python_repl
+    exec(command, _persistent_namespace)
+  File "<string>", line 30, in <module>
+AttributeError: 'float' object has no attribute 'round'
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+
+2025-11-02 15:58:41,492 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 15:58:41,495 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 15:58:41,495 - __main__ - INFO - 📝 Iteration 4/12 - GENERATE Node
+2025-11-02 15:58:41,496 - __main__ - INFO - 🔧 Tool calls requested: execute_python
+2025-11-02 15:58:41,496 - __main__ - INFO -    Tool 1: execute_python - Args: ['code']
+2025-11-02 15:58:41,496 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 15:58:41,632 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 15:58:41,632 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 15:58:41,632 - __main__ - INFO - 💻 Code Execution #3
+2025-11-02 15:58:41,632 - __main__ - INFO -    Code snippet: from sklearn.metrics import r2_score
+
+# Assuming df, X, y, pipe, kf are in memory from previous cells
+cv_pred = cross_val_predict(pipe, X, y, cv=kf)
+overall_cv_r2 = r2_score(y, cv_pred)
+print('Overall...
+2025-11-02 15:58:41,632 - __main__ - INFO -    ✅ Execution successful
+2025-11-02 15:58:41,632 - __main__ - INFO -    Output length: 470 chars
+2025-11-02 15:58:41,633 - __main__ - ERROR -    Error details: /Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+
+2025-11-02 15:59:16,318 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 15:59:16,326 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 15:59:16,326 - __main__ - INFO - 📝 Iteration 5/12 - GENERATE Node
+2025-11-02 15:59:16,326 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 15:59:16,428 - __main__ - INFO - 🏁 LangGraph workflow completed - Total iterations: 5
+2025-11-02 15:59:16,428 - __main__ - INFO - ✅ Final solution extracted
+2025-11-02 15:59:16,429 - __main__ - INFO - 📊 Execution Summary:
+2025-11-02 15:59:16,430 - __main__ - INFO -    - Total iterations: 5
+2025-11-02 15:59:16,430 - __main__ - INFO -    - Code blocks executed: 3
+2025-11-02 15:59:16,430 - __main__ - INFO -    - Models trained: False
+2025-11-02 16:03:39,861 - __main__ - INFO - 📨 Received message type: user_message
+2025-11-02 16:03:39,862 - __main__ - INFO - Starting agent execution - Session: 3af1ff2b-38fa-4e4c-b4d1-b60dcaf3a250, Dataset: sample_sales
+2025-11-02 16:03:39,862 - __main__ - INFO - Task: okay tell me more about you've done
+2025-11-02 16:03:39,883 - __main__ - INFO - Agent workflow initialized
+2025-11-02 16:03:40,017 - __main__ - INFO - Dataset loaded and namespace initialized
+2025-11-02 16:03:40,017 - __main__ - INFO - Starting LangGraph workflow stream
+2025-11-02 16:04:05,382 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 16:04:05,385 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 16:04:05,385 - __main__ - INFO - 📝 Iteration 1/12 - GENERATE Node
+2025-11-02 16:04:05,385 - __main__ - INFO - 🔧 Tool calls requested: dataset_info
+2025-11-02 16:04:05,385 - __main__ - INFO -    Tool 1: dataset_info - Args: ['dataset_path']
+2025-11-02 16:04:05,385 - __main__ - INFO - 📋 Plan extracted and sent to frontend
+2025-11-02 16:04:05,385 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 16:04:05,495 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 16:04:05,495 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 16:04:38,659 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 16:04:38,665 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 16:04:38,665 - __main__ - INFO - 📝 Iteration 2/12 - GENERATE Node
+2025-11-02 16:04:38,665 - __main__ - INFO - 🔧 Tool calls requested: execute_python
+2025-11-02 16:04:38,666 - __main__ - INFO -    Tool 1: execute_python - Args: ['code']
+2025-11-02 16:04:38,666 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 16:04:39,169 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 16:04:39,170 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 16:04:39,170 - __main__ - INFO - 💻 Code Execution #1
+2025-11-02 16:04:39,170 - __main__ - INFO -    Code snippet: # Step 2 & 3: Load data, parse dtypes, compute derived fields, and assess quality
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load
+df = pd.read_csv(...
+2025-11-02 16:04:39,170 - __main__ - INFO -    ✅ Execution successful
+2025-11-02 16:04:39,170 - __main__ - INFO -    Output length: 996 chars
+2025-11-02 16:04:39,170 - __main__ - INFO -    📊 Generated 1 plot(s)
+2025-11-02 16:05:13,775 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 16:05:13,786 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 16:05:13,786 - __main__ - INFO - 📝 Iteration 3/12 - GENERATE Node
+2025-11-02 16:05:13,787 - __main__ - INFO - 🔧 Tool calls requested: execute_python
+2025-11-02 16:05:13,787 - __main__ - INFO -    Tool 1: execute_python - Args: ['code']
+2025-11-02 16:05:13,787 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 16:05:14,496 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 16:05:14,496 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 16:05:14,496 - __main__ - INFO - 💻 Code Execution #2
+2025-11-02 16:05:14,496 - __main__ - INFO -    Code snippet: # Step 4: Deeper EDA
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Ensure df exists
+assert 'df' in globals()
+
+# Correlation matrix for numeric feature...
+2025-11-02 16:05:14,497 - __main__ - INFO -    ✅ Execution successful
+2025-11-02 16:05:14,497 - __main__ - INFO -    📊 Generated 4 plot(s)
+2025-11-02 16:05:28,810 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 16:05:28,819 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 16:05:28,819 - __main__ - INFO - 📝 Iteration 4/12 - GENERATE Node
+2025-11-02 16:05:28,819 - __main__ - INFO - 🔧 Tool calls requested: execute_python
+2025-11-02 16:05:28,819 - __main__ - INFO -    Tool 1: execute_python - Args: ['code']
+2025-11-02 16:05:28,820 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 16:05:29,776 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 16:05:29,776 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 16:05:29,776 - __main__ - INFO - 💻 Code Execution #3
+2025-11-02 16:05:29,776 - __main__ - INFO -    Code snippet: # Step 5-8: Define task, build pipeline, train and evaluate
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessi...
+2025-11-02 16:05:29,776 - __main__ - WARNING -    ❌ Execution failed: TypeError: got an unexpected keyword argument 'squared'
+Traceback (most recent call last):
+  File "/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/ml_engineer/python_executor.py", line 114,
+2025-11-02 16:05:29,776 - __main__ - ERROR -    Error details: TypeError: got an unexpected keyword argument 'squared'
+Traceback (most recent call last):
+  File "/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/ml_engineer/python_executor.py", line 114, in run_python_repl
+    exec(command, _persistent_namespace)
+  File "<string>", line 59, in <module>
+  File "/Users/assanali.aukenov/Projects/agent-ml-engineer/backend/.venv/lib/python3.9/site-packages/sklearn/utils/_param_validation.py", line 194, in wrapper
+    params = func_sig.bind(*args, **kwargs)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/inspect.py", line 3062, in bind
+    return self._bind(args, kwargs)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/inspect.py", line 3051, in _bind
+    raise TypeError(
+TypeError: got an unexpected keyword argument 'squared'
+
+2025-11-02 16:06:04,388 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 16:06:04,389 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 16:06:04,389 - __main__ - INFO - 📝 Iteration 5/12 - GENERATE Node
+2025-11-02 16:06:04,389 - __main__ - INFO - 🔧 Tool calls requested: execute_python
+2025-11-02 16:06:04,389 - __main__ - INFO -    Tool 1: execute_python - Args: ['code']
+2025-11-02 16:06:04,389 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 16:06:05,164 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 16:06:05,164 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 16:06:05,164 - __main__ - INFO - 💻 Code Execution #4
+2025-11-02 16:06:05,164 - __main__ - INFO -    Code snippet: # Re-run modeling with corrected RMSE calculation (sqrt of MSE)
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.compose import ColumnTransformer
+from sklearn.preproc...
+2025-11-02 16:06:05,164 - __main__ - INFO -    ✅ Execution successful
+2025-11-02 16:06:05,164 - __main__ - INFO -    Output length: 628 chars
+2025-11-02 16:06:42,760 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 16:06:42,802 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 16:06:42,803 - __main__ - INFO - 📝 Iteration 6/12 - GENERATE Node
+2025-11-02 16:06:42,973 - __main__ - INFO - 🔀 LangGraph Node: execute_tools
+2025-11-02 16:06:42,973 - __main__ - INFO - ⚙️  EXECUTE_TOOLS Node - Running tools
+2025-11-02 16:06:42,973 - __main__ - INFO - 💻 Code Execution #5
+2025-11-02 16:06:42,973 - __main__ - INFO -    Code snippet: # Step 10: Package the best model for reuse and demonstrate inference
+import os, json
+import joblib
+import pandas as pd
+
+# Determine best model pipeline
+chosen_model = rf_model if (best_model == 'rf')...
+2025-11-02 16:06:42,973 - __main__ - INFO -    ✅ Execution successful
+2025-11-02 16:07:26,121 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-02 16:07:26,124 - __main__ - INFO - 🔀 LangGraph Node: generate
+2025-11-02 16:07:26,124 - __main__ - INFO - 📝 Iteration 7/12 - GENERATE Node
+2025-11-02 16:07:26,124 - __main__ - INFO - 🤔 Agent reasoning extracted
+2025-11-02 16:07:26,226 - __main__ - INFO - 🏁 LangGraph workflow completed - Total iterations: 7
+2025-11-02 16:07:26,226 - __main__ - INFO - ✅ Final solution extracted
+2025-11-02 16:07:26,227 - __main__ - INFO - 📊 Execution Summary:
+2025-11-02 16:07:26,227 - __main__ - INFO -    - Total iterations: 7
+2025-11-02 16:07:26,227 - __main__ - INFO -    - Code blocks executed: 5
+2025-11-02 16:07:26,227 - __main__ - INFO -    - Models trained: False
