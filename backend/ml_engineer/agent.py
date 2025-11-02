@@ -206,6 +206,7 @@ You have access to a persistent Python REPL with:
 - Persistent namespace (variables and imports persist across executions)
 - Execution timeout: {Config.TIMEOUT_SECONDS}s per code block
 - **Visual feedback**: You can see the plots you generate - they are included in the tool responses
+- **Artifacts**: Whenever you create visuals or train models, explicitly save them to disk (e.g., `plt.savefig(...)`, `joblib.dump(...)`) so they are always available for download as artifacts.
 
 **Getting Started:** Import required libraries and load the dataset(s) using the provided path variables.
 {planning_instructions}
@@ -246,6 +247,7 @@ When the task is complete, provide your findings in <solution> tags with relevan
 ✓ Create informative visualizations when helpful
 ✓ Handle edge cases appropriately
 ✓ Validate your approach and results
+✓ Persist every important artifact (plots, trained models, reports) to disk for later download
 ✓ Explain your reasoning and choices
 
 **Critical Rules:**
