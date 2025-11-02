@@ -12,7 +12,7 @@ import uuid
 from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote, unquote
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
@@ -147,8 +147,6 @@ def _build_public_url(file_path: Path, base_dir: Path, source_label: str) -> Opt
 
     Returns None if the file is not inside the supplied base directory.
     """
-    submissions_before = _snapshot_submission_files()
-
     try:
         relative_path = file_path.relative_to(base_dir)
     except ValueError:
@@ -159,19 +157,20 @@ def _build_public_url(file_path: Path, base_dir: Path, source_label: str) -> Opt
     return f"{base}/download?source={source_label}&path={safe_path}"
 
 
-def _snapshot_submission_files() -> Set[Path]:
+def _snapshot_submission_files() -> Dict[Path, Tuple[int, int]]:
     """Capture existing submission-like CSV files before the agent runs."""
     patterns = ["submission.csv", "submission_*.csv", "submission-*.csv"]
-    seen: Set[Path] = set()
+    snapshot: Dict[Path, Tuple[int, int]] = {}
 
     for pattern in patterns:
         for candidate in Config.BASE_DIR.glob(pattern):
             if candidate.is_file():
-                seen.add(candidate.resolve())
-    return seen
+                stats = candidate.stat()
+                snapshot[candidate.resolve()] = (stats.st_mtime_ns, stats.st_size)
+    return snapshot
 
 
-def _collect_new_submissions(previous: Set[Path], artifacts_dir: Path) -> List[Path]:
+def _collect_new_submissions(previous: Dict[Path, Tuple[int, int]], artifacts_dir: Path) -> List[Path]:
     """
     Copy any newly created submission CSVs into the artifacts directory and
     return their new paths.
@@ -180,11 +179,14 @@ def _collect_new_submissions(previous: Set[Path], artifacts_dir: Path) -> List[P
     collected: List[Path] = []
 
     current = _snapshot_submission_files()
-    new_files = [path for path in current if path not in previous]
 
-    for submission_path in new_files:
+    for submission_path, metadata in current.items():
         if artifacts_dir in submission_path.parents:
             collected.append(submission_path)
+            continue
+
+        previous_meta = previous.get(submission_path)
+        if previous_meta == metadata:
             continue
 
         target = artifacts_dir / submission_path.name
@@ -251,6 +253,8 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
     """Execute the ML Engineer agent and stream events back to the client."""
     prompt = request.message.strip()
     await session.broadcast(create_event("status", {"stage": "starting", "prompt": prompt}))
+
+    submissions_before = _snapshot_submission_files()
 
     dataset_argument: Any
     if len(session.dataset_paths) == 1:
