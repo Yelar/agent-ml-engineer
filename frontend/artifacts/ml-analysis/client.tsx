@@ -23,15 +23,15 @@ export const mlAnalysisArtifact = new Artifact<"ml-analysis", Metadata>({
       blocks: [],
     });
   },
-  onStreamPart: ({ streamPart, setArtifact, metadata, setMetadata }) => {
+  onStreamPart: ({ streamPart, setArtifact, setMetadata }) => {
     // Handle WebSocket block additions
-    if (streamPart.type === "data-ml-block") {
-      const block = streamPart.data as DocumentBlock;
+    if (streamPart.type === "data-mlBlock") {
+      const block = streamPart.data;
       
-      setMetadata({
+      setMetadata((metadata) => ({
         ...metadata,
-        blocks: [...(metadata?.blocks || []), block],
-      });
+        blocks: [...(metadata.blocks || []), block],
+      }));
 
       // Update visibility
       setArtifact((draft) => ({
@@ -42,7 +42,7 @@ export const mlAnalysisArtifact = new Artifact<"ml-analysis", Metadata>({
     }
 
     // Mark as complete
-    if (streamPart.type === "data-ml-complete") {
+    if (streamPart.type === "data-mlComplete") {
       setArtifact((draft) => ({
         ...draft,
         status: "idle",

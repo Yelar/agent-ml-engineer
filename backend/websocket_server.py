@@ -58,14 +58,23 @@ class AgentStreamer:
         self.websocket = websocket
         self.session_id = session_id
         self.document_opened = False
+        self.is_connected = True
     
     async def send_message(self, message_type: str, payload: any = None):
         """Send a message to the frontend"""
-        message = {"type": message_type}
-        if payload is not None:
-            message["payload"] = payload
-        
-        await self.websocket.send_json(message)
+        if not self.is_connected:
+            logger.warning(f"Skipping message send - websocket disconnected: {message_type}")
+            return
+            
+        try:
+            message = {"type": message_type}
+            if payload is not None:
+                message["payload"] = payload
+            
+            await self.websocket.send_json(message)
+        except Exception as e:
+            logger.warning(f"Failed to send message (connection likely closed): {e}")
+            self.is_connected = False
     
     async def open_document(self):
         """Open the document panel"""
@@ -188,6 +197,11 @@ class AgentStreamer:
             
             # Stream the workflow
             for event in agent.app.stream(initial_state):
+                # Check if connection is still alive
+                if not self.is_connected:
+                    logger.warning("⚠️  Connection lost, stopping agent execution")
+                    break
+                    
                 # Log LangGraph node execution
                 # Event is a dict with single key-value pair: {node_name: state}
                 for node_name, node_state in event.items():
@@ -367,12 +381,22 @@ class AgentStreamer:
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
-            logger.error(f"❌ Error in process_agent_output: {error_trace}")
-            print(f"Error in process_agent_output: {error_trace}")
-            await self.send_final_answer(
-                f"❌ Error during execution: {str(e)}"
-            )
-            raise
+            
+            # Check if this is a disconnection error
+            is_disconnect = any(term in str(e).lower() for term in ['disconnect', 'closed', 'connection'])
+            
+            if is_disconnect:
+                logger.warning(f"⚠️  Client disconnected during processing: {str(e)}")
+                self.is_connected = False
+            else:
+                logger.error(f"❌ Error in process_agent_output: {error_trace}")
+                print(f"Error in process_agent_output: {error_trace}")
+                # Only try to send error if still connected
+                if self.is_connected:
+                    await self.send_final_answer(
+                        f"❌ Error during execution: {str(e)}"
+                    )
+                raise
 
 
 @app.websocket("/ws/{session_id}")

@@ -9,6 +9,7 @@ import type { runMLAnalysis } from "./ai/tools/run-ml-analysis";
 import type { listDatasets } from "./ai/tools/list-datasets";
 import type { Suggestion } from "./db/schema";
 import type { AppUsage } from "./usage";
+import type { DocumentBlock } from "./websocket-types";
 
 export type DataPart = { type: "append-message"; message: string };
 
@@ -49,6 +50,8 @@ export type CustomUIDataTypes = {
   clear: null;
   finish: null;
   usage: AppUsage;
+  mlBlock: DocumentBlock;
+  mlComplete: null;
 };
 
 export type ChatMessage = UIMessage<

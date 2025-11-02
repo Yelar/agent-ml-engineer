@@ -154,7 +154,8 @@ export function useWebSocketML({
       }
       reconnectAttempts.current = 0;
     };
-  }, [enabled, sessionId, connect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, sessionId, backendUrl]);
 
   const sendMessage = useCallback(
     (type: string, payload?: any) => {
