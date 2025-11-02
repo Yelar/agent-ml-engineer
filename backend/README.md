@@ -22,6 +22,7 @@ That's it! The agent will build a complete ML pipeline with planning, execution,
 ## Features
 
 - **Automated ML Pipeline Creation**: Describe your task in natural language, and the agent builds the complete pipeline
+- **Multiple Dataset Support**: Work with train/test splits or multiple related datasets simultaneously
 - **Dataset Analysis**: Automatic exploratory data analysis with visualizations
 - **Model Building**: Trains and evaluates ML models appropriate for your data
 - **Artifact Storage**: All plots, code chunks, and outputs are saved for later use
@@ -75,9 +76,10 @@ python example_run.py
 
 This will:
 - Use GPT-5 with high reasoning effort
-- Build a complete ML pipeline on sample sales data
-- Show verbose output with planning
+- Build a complete ML pipeline using **office_train** and **office_test** datasets
+- Show verbose output with planning and thinking
 - Generate plots and Jupyter notebook
+- Perfect for train/test ML workflows!
 
 ### CLI Usage
 
@@ -165,6 +167,32 @@ agent = MLEngineerAgent(
 result = agent.run("Build a classification model with feature importance")
 print(f"Solution: {result['solution']}")
 print(f"Plots: {len(result['plot_paths'])}")
+```
+
+### 4. Multiple Datasets (Train/Test)
+
+```python
+from ml_engineer.agent import MLEngineerAgent
+
+# Use multiple datasets simultaneously
+agent = MLEngineerAgent(
+    dataset_path=["office_train", "office_test"],  # List of datasets
+    model_name="gpt-5",
+    reasoning_effort="high",
+    verbose=True
+)
+
+result = agent.run("""
+Build a complete ML pipeline:
+1. Train on df_office_train
+2. Test on df_office_test
+3. Evaluate and compare performance
+""")
+
+# Datasets accessed as: df_office_train, df_office_test
+```
+
+See [MULTI_DATASET.md](../MULTI_DATASET.md) for details.
 ```
 
 ## Output Structure

@@ -1,7 +1,6 @@
 
 
-from typing import TypedDict, Annotated, Sequence, Literal, Optional, Union
-from pathlib import Path
+from typing import TypedDict, Sequence, Literal, Optional, Union, List
 import re
 from datetime import datetime
 
@@ -35,7 +34,7 @@ class MLEngineerAgent:
 
     def __init__(
         self,
-        dataset_path: str,
+        dataset_path: Union[str, List[str]],
         model_name: str = None,
         max_iterations: int = None,
         verbose: bool = True,
@@ -46,7 +45,7 @@ class MLEngineerAgent:
         Initialize the ML Engineer Agent
 
         Args:
-            dataset_path: Path or identifier for the dataset
+            dataset_path: Path/identifier for dataset(s). Can be a single string or list of strings
             model_name: OpenAI model to use (default from config)
             max_iterations: Maximum number of iterations (default from config)
             verbose: If True, print detailed execution steps
@@ -59,9 +58,17 @@ class MLEngineerAgent:
         self.planning_mode = planning_mode
         self.reasoning_effort = reasoning_effort or Config.DEFAULT_REASONING_EFFORT
 
-        # Resolve dataset
-        self.dataset_path = DatasetResolver.resolve(dataset_path)
-        self.dataset_name = self.dataset_path.stem
+        # Resolve dataset(s) - can be single or multiple
+        if isinstance(dataset_path, list):
+            self.dataset_paths = [DatasetResolver.resolve(path) for path in dataset_path]
+            self.dataset_names = [path.stem for path in self.dataset_paths]
+            self.dataset_name = "_".join(self.dataset_names)  # Combined name for artifacts
+            self.multiple_datasets = True
+        else:
+            self.dataset_paths = [DatasetResolver.resolve(dataset_path)]
+            self.dataset_names = [self.dataset_paths[0].stem]
+            self.dataset_name = self.dataset_names[0]
+            self.multiple_datasets = False
 
         # Initialize LLM with reasoning_effort for GPT-5
         llm_kwargs = {
@@ -125,11 +132,22 @@ Before starting execution, create a detailed plan:
 After creating the plan, follow it step by step, updating the plan as you learn more about the data.
 """
 
+        # Create dataset information string
+        if self.multiple_datasets:
+            dataset_info = f"""**Multiple Datasets Available:**
+{chr(10).join(f"- {name}: {path}" for name, path in zip(self.dataset_names, self.dataset_paths))}
+
+You have access to multiple datasets. They are loaded as:
+{chr(10).join(f"- df_{name} = {name} dataset" for name in self.dataset_names)}
+"""
+        else:
+            dataset_info = f"""**Dataset Information:**
+- Dataset path: {self.dataset_paths[0]}
+- Dataset name: {self.dataset_names[0]}"""
+
         return f"""You are an expert ML Engineer assistant. Your goal is to help users build complete machine learning pipelines from their datasets.
 
-**Dataset Information:**
-- Dataset path: {self.dataset_path}
-- Dataset name: {self.dataset_name}
+{dataset_info}
 
 **Your Capabilities:**
 1. Analyze datasets to understand structure and patterns
@@ -140,7 +158,7 @@ After creating the plan, follow it step by step, updating the plan as you learn 
 
 **Execution Environment:**
 - You have access to a persistent Python environment
-- The dataset is loaded as a pandas DataFrame in the variable 'df'
+- Dataset(s) loaded as pandas DataFrame(s): {'df' if not self.multiple_datasets else ', '.join(f"df_{name}" for name in self.dataset_names)}
 - Common libraries are available: pandas (pd), numpy (np), matplotlib.pyplot (plt), seaborn (sns), sklearn
 - All plots created with matplotlib are automatically captured and saved
 - Variables and imports persist across code executions
@@ -326,7 +344,7 @@ Begin by creating a plan (if planning mode is enabled), then understanding the d
         # Execute each tool call
         tool_messages = []
         if hasattr(last_message, "tool_calls") and last_message.tool_calls:
-            for i, tool_call in enumerate(last_message.tool_calls, 1):
+            for tool_call in last_message.tool_calls:
                 tool_name = tool_call["name"]
                 tool_args = tool_call["args"]
 
@@ -406,9 +424,12 @@ Begin by creating a plan (if planning mode is enabled), then understanding the d
             if self.model_name in ["gpt-5", "o1-preview", "o1-mini", "o3-mini"] or self.model_name.startswith("gpt-5"):
                 reasoning_info = f"\nReasoning Effort: {self.reasoning_effort}"
 
+            # Format dataset paths for display
+            dataset_display = ", ".join([str(p) for p in self.dataset_paths])
+
             self._print_section("🚀 ML ENGINEER AGENT STARTING", f"""
 Run ID: {self.run_id}
-Dataset: {self.dataset_name} ({self.dataset_path})
+Dataset: {self.dataset_name} ({dataset_display})
 Model: {self.model_name}{reasoning_info}
 Max Iterations: {self.max_iterations}
 Planning Mode: {'Enabled' if self.planning_mode else 'Disabled'}
@@ -422,16 +443,31 @@ Task: {prompt}
         clear_history()
         self.iteration_count = 0
 
-        # Load dataset into namespace
-        df = load_dataset(self.dataset_path)
-        inject_variables({
-            'df': df,
-            'DATASET_PATH': str(self.dataset_path),
+        # Load dataset(s) into namespace
+        variables_to_inject = {
             'pd': __import__('pandas'),
             'np': __import__('numpy'),
             'plt': __import__('matplotlib.pyplot'),
             'sns': __import__('seaborn'),
-        })
+        }
+
+        if self.multiple_datasets:
+            # Load multiple datasets with df_<name> convention
+            for name, path in zip(self.dataset_names, self.dataset_paths):
+                df = load_dataset(path)
+                variables_to_inject[f'df_{name}'] = df
+                variables_to_inject[f'DATASET_PATH_{name.upper()}'] = str(path)
+                if self.verbose:
+                    print(f"   Loaded {name}: {df.shape[0]} rows × {df.shape[1]} columns")
+        else:
+            # Single dataset as 'df'
+            df = load_dataset(self.dataset_paths[0])
+            variables_to_inject['df'] = df
+            variables_to_inject['DATASET_PATH'] = str(self.dataset_paths[0])
+            if self.verbose:
+                print(f"   Loaded dataset: {df.shape[0]} rows × {df.shape[1]} columns")
+
+        inject_variables(variables_to_inject)
 
         # Setup workflow
         self._setup_workflow()
@@ -516,7 +552,7 @@ Run ID: {self.run_id}
             f.write(f"Timestamp: {datetime.now().isoformat()}\n")
             f.write(f"{'=' * 80}\n\n")
 
-            for i, msg in enumerate(messages):
+            for msg in messages:
                 if isinstance(msg, SystemMessage):
                     f.write(f"[SYSTEM]\n{msg.content}\n\n")
                 elif isinstance(msg, HumanMessage):
@@ -555,16 +591,27 @@ Run ID: {self.run_id}
         clear_history()
         self.iteration_count = 0
 
-        # Load dataset into namespace
-        df = load_dataset(self.dataset_path)
-        inject_variables({
-            'df': df,
-            'DATASET_PATH': str(self.dataset_path),
+        # Load dataset(s) into namespace
+        variables_to_inject = {
             'pd': __import__('pandas'),
             'np': __import__('numpy'),
             'plt': __import__('matplotlib.pyplot'),
             'sns': __import__('seaborn'),
-        })
+        }
+
+        if self.multiple_datasets:
+            # Load multiple datasets with df_<name> convention
+            for name, path in zip(self.dataset_names, self.dataset_paths):
+                df = load_dataset(path)
+                variables_to_inject[f'df_{name}'] = df
+                variables_to_inject[f'DATASET_PATH_{name.upper()}'] = str(path)
+        else:
+            # Single dataset as 'df'
+            df = load_dataset(self.dataset_paths[0])
+            variables_to_inject['df'] = df
+            variables_to_inject['DATASET_PATH'] = str(self.dataset_paths[0])
+
+        inject_variables(variables_to_inject)
 
         # Setup workflow
         self._setup_workflow()

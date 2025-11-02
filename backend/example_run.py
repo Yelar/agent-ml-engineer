@@ -25,24 +25,36 @@ def run_example():
 
     # Define the task
     prompt = """
-    Analyze the sample sales dataset and build a complete ML pipeline:
-    1. Explore the data and identify patterns
-    2. Create visualizations showing key relationships
-    3. Build a regression model to predict revenue
-    4. Evaluate the model and show feature importance
-    5. Provide recommendations for improving sales
+    You have office_train.csv and office_test.csv datasets for building a machine learning model, in the end, create a submission.csv file with the predictions.
+    Build a complete ML pipeline:
+    n this competition, you will build a machine learning model to predict the quality category of office buildings based on their characteristics.
+
+Goal
+Predict the OfficeCategory (0, 1, 2, 3, or 4) for office buildings in the test set.
+
+Evaluation Metric
+Submissions are evaluated on Classification Accuracy:
+
+Accuracy = (Number of Correct Predictions) / (Total Predictions)
+Submission Format
+Your submission file should contain exactly 15,000 predictions with two columns:
+
+Id: Integer from 0 to 14,999
+OfficeCategory: Your predicted category (0, 1, 2, 3, or 4)
+Example: Id,OfficeCategory 0,3 1,2 2,4 …
     """
 
-    dataset = "sample_sales"
+    # Use multiple datasets
+    datasets = ["office_train", "office_test"]
 
     print(f"Task: {prompt.strip()}")
-    print(f"Dataset: {dataset}\n")
+    print(f"Datasets: {', '.join(datasets)}\n")
 
-    # Initialize the agent
+    # Initialize the agent with multiple datasets
     agent = MLEngineerAgent(
-        dataset_path=dataset,
+        dataset_path=datasets,  # Pass list of datasets
         model_name="gpt-5",  # Use GPT-5
-        max_iterations=15,
+        max_iterations=20,
         verbose=True,  # Show all steps
         planning_mode=True,  # Create a plan first
         reasoning_effort="high"  # Use high reasoning effort

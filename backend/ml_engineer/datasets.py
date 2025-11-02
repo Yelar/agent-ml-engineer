@@ -16,6 +16,8 @@ class DatasetResolver:
     CATALOG = {
         "sample_sales": "sample_sales.csv",
         "xau_intraday": "XAU_15m_data.csv",
+        "office_train": "office_train.csv",
+        "office_test": "office_test.csv",
     }
 
     @classmethod
