@@ -62,7 +62,7 @@ function PureMultimodalInput({
   selectedVisibilityType,
   selectedModelId,
   onModelChange,
-  usage,
+  // usage,
 }: {
   chatId: string;
   input: string;
@@ -126,10 +126,29 @@ function PureMultimodalInput({
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
+  const [csvUploadProgress, setCsvUploadProgress] = useState<{
+    isUploading: boolean;
+    fileName?: string;
+  }>({ isUploading: false });
+  const [uploadedCSVs, setUploadedCSVs] = useState<
+    Array<{ fileName: string; sessionId: string }>
+  >([]);
 
   const submitForm = useCallback(() => {
     window.history.pushState({}, "", `/chat/${chatId}`);
+
+    // Build message text with CSV info
+    let messageText = input;
+    if (uploadedCSVs.length > 0) {
+      const csvInfo = uploadedCSVs
+        .map((csv) => `[CSV: ${csv.fileName} (session: ${csv.sessionId})]`)
+        .join(" ");
+      messageText = input.trim() 
+        ? `${csvInfo}\n\n${input}` 
+        : csvInfo;
+    }
 
     sendMessage({
       role: "user",
@@ -142,12 +161,13 @@ function PureMultimodalInput({
         })),
         {
           type: "text",
-          text: input,
+          text: messageText,
         },
       ],
     });
 
     setAttachments([]);
+    setUploadedCSVs([]);
     setLocalStorageInput("");
     resetHeight();
     setInput("");
@@ -159,6 +179,7 @@ function PureMultimodalInput({
     input,
     setInput,
     attachments,
+    uploadedCSVs,
     sendMessage,
     setAttachments,
     setLocalStorageInput,
@@ -199,6 +220,62 @@ function PureMultimodalInput({
   }, [selectedModelId]);
 
   const contextProps = useMemo(() => ({}), []);
+
+  const uploadCSV = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append("csv", file);
+
+    try {
+      const response = await fetch("/api/csv/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+      const { error } = await response.json();
+      toast.error(error || "Failed to upload CSV");
+      return null;
+    } catch (error) {
+      console.error("CSV upload error:", error);
+      toast.error("Failed to upload CSV file");
+      return null;
+    }
+  }, []);
+
+  const handleCSVChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+
+      setCsvUploadProgress({ isUploading: true, fileName: files[0].name });
+
+      try {
+        for (const file of files) {
+          const result = await uploadCSV(file);
+          if (result?.session_id) {
+            toast.success(`CSV uploaded: ${file.name}`);
+            // Store session_id and add to uploaded list
+            sessionStorage.setItem("csv_session_id", result.session_id);
+            setUploadedCSVs((prev) => [
+              ...prev,
+              { fileName: file.name, sessionId: result.session_id },
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error("Error uploading CSV files!", error);
+      } finally {
+        setCsvUploadProgress({ isUploading: false });
+        if (csvInputRef.current) {
+          csvInputRef.current.value = "";
+        }
+      }
+    },
+    [uploadCSV]
+  );
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -300,6 +377,16 @@ function PureMultimodalInput({
         tabIndex={-1}
         type="file"
       />
+      
+      <input
+        className="-top-4 -left-4 pointer-events-none fixed size-0.5 opacity-0"
+        accept=".csv"
+        multiple
+        onChange={handleCSVChange}
+        ref={csvInputRef}
+        tabIndex={-1}
+        type="file"
+      />
 
       <PromptInput
         className="rounded-xl border border-border bg-background p-3 shadow-xs transition-all duration-200 focus-within:border-border hover:border-muted-foreground/50"
@@ -312,6 +399,61 @@ function PureMultimodalInput({
           }
         }}
       >
+        {/* CSV Files Preview */}
+        {uploadedCSVs.length > 0 && (
+          <div className="flex flex-row items-center gap-2 overflow-x-scroll pb-2">
+            {uploadedCSVs.map((csv, idx) => (
+              <div
+                key={csv.sessionId}
+                className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs dark:border-emerald-800 dark:bg-emerald-950"
+              >
+                <svg
+                  className="size-4 text-emerald-600 dark:text-emerald-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <title>CSV File</title>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M12 18v-6" />
+                  <path d="m9 15 3-3 3 3" />
+                </svg>
+                <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                  {csv.fileName}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadedCSVs((prev) => prev.filter((_, i) => i !== idx));
+                  }}
+                  className="ml-1 text-emerald-500 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-200"
+                  aria-label="Remove CSV"
+                >
+                  <svg
+                    className="size-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <title>Remove</title>
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Regular Attachments Preview */}
         {(attachments.length > 0 || uploadQueue.length > 0) && (
           <div
             className="flex flex-row items-end gap-2 overflow-x-scroll"
@@ -363,6 +505,17 @@ function PureMultimodalInput({
         </div>
         <PromptInputToolbar className="!border-top-0 border-t-0! p-0 shadow-none dark:border-0 dark:border-transparent!">
           <PromptInputTools className="gap-0 sm:gap-0.5">
+            {csvUploadProgress.isUploading && (
+              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1 text-xs text-muted-foreground">
+                <div className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Uploading CSV...
+              </div>
+            )}
+            <CSVUploadButton
+              csvInputRef={csvInputRef}
+              isUploading={csvUploadProgress.isUploading}
+              status={status}
+            />
             <AttachmentsButton
               fileInputRef={fileInputRef}
               selectedModelId={selectedModelId}
@@ -379,7 +532,7 @@ function PureMultimodalInput({
           ) : (
             <PromptInputSubmit
               className="size-8 rounded-full bg-primary text-primary-foreground transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
-              disabled={!input.trim() || uploadQueue.length > 0}
+              disabled={(!input.trim() && uploadedCSVs.length === 0) || uploadQueue.length > 0}
               status={status}
 	      data-testid="send-button"
             >
@@ -443,6 +596,49 @@ function PureAttachmentsButton({
 }
 
 const AttachmentsButton = memo(PureAttachmentsButton);
+
+function PureCSVUploadButton({
+  csvInputRef,
+  status,
+  isUploading,
+}: {
+  csvInputRef: React.MutableRefObject<HTMLInputElement | null>;
+  status: UseChatHelpers<ChatMessage>["status"];
+  isUploading: boolean;
+}) {
+  return (
+    <Button
+      className="aspect-square h-8 rounded-lg p-1 transition-colors hover:bg-accent"
+      data-testid="csv-upload-button"
+      disabled={status !== "ready" || isUploading}
+      onClick={(event) => {
+        event.preventDefault();
+        csvInputRef.current?.click();
+      }}
+      title="Upload CSV dataset"
+      variant="ghost"
+    >
+      <svg
+        className="size-4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <title>Upload CSV</title>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14 2v6h6" />
+        <path d="M12 18v-6" />
+        <path d="m9 15 3-3 3 3" />
+      </svg>
+    </Button>
+  );
+}
+
+const CSVUploadButton = memo(PureCSVUploadButton);
 
 function PureModelSelectorCompact({
   selectedModelId,

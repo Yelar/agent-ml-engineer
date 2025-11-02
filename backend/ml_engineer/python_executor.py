@@ -7,6 +7,17 @@ import traceback
 from typing import Dict, Any, List
 from contextlib import redirect_stdout, redirect_stderr
 import signal
+from functools import wraps
+import threading
+
+try:
+    import matplotlib
+
+    matplotlib.use("Agg", force=True)
+except Exception:
+    # matplotlib is optional; ignore if unavailable
+    pass
+
 
 # Persistent namespace for code execution
 _persistent_namespace: Dict[str, Any] = {}
@@ -77,6 +88,12 @@ class PlotCapture:
             pass
 
 
+def _supports_signal_timeout() -> bool:
+    """Check whether the current thread can safely use signal-based alarms."""
+
+    return threading.current_thread() is threading.main_thread()
+
+
 def run_python_repl(command: str, timeout_seconds: int = 60) -> Dict[str, Any]:
     """
     Execute Python code in a persistent namespace with plot capture
@@ -105,9 +122,14 @@ def run_python_repl(command: str, timeout_seconds: int = 60) -> Dict[str, Any]:
     # Capture plots
     plot_capture = PlotCapture()
 
+    use_timeout = _supports_signal_timeout()
+
     try:
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture), plot_capture:
-            previous_handler = _start_timeout(timeout_seconds)
+            # Set timeout if supported (signals only work on main thread)
+            if use_timeout:
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(timeout_seconds)
 
             try:
                 # Execute the code
@@ -118,7 +140,8 @@ def run_python_repl(command: str, timeout_seconds: int = 60) -> Dict[str, Any]:
             except Exception as e:
                 result['error'] = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
             finally:
-                _clear_timeout(previous_handler)
+                if use_timeout:
+                    signal.alarm(0)
 
         # Get captured output
         result['output'] = stdout_capture.getvalue()
