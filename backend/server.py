@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from ml_engineer.agent import MLEngineerAgent
 from ml_engineer.config import Config
@@ -43,6 +43,9 @@ class SessionState:
         self.prompts: List[str] = []
         self.current_task: Optional[asyncio.Task] = None
         self._listeners: set[asyncio.Queue] = set()
+        self.agent: Optional[MLEngineerAgent] = None
+        self.messages: List[BaseMessage] = []
+        self.history_cursor: int = 0
 
     async def broadcast(self, event: Dict[str, Any]) -> None:
         """Store and broadcast an event to all subscribers."""
@@ -210,10 +213,11 @@ def _collect_new_submissions(previous: Dict[Path, Tuple[int, int]], artifacts_di
 async def stream_execution_events(
     session: SessionState,
     agent_future: asyncio.Task,
+    start_index: int = 0,
     poll_interval: float = 0.4,
 ) -> None:
     """Continuously broadcast newly generated execution history entries."""
-    processed = 0
+    processed = start_index
 
     try:
         while True:
@@ -278,6 +282,7 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
             for tag, content in blocks:
                 if not content:
                     continue
+
                 event = create_event(
                     "agent_tag",
                     {"tag": tag, "content": content, "iteration": iteration},
@@ -293,25 +298,59 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
                 future = asyncio.run_coroutine_threadsafe(session.broadcast(event), loop)
                 future.add_done_callback(_log_future)
 
-        try:
-            agent = MLEngineerAgent(
-                dataset_path=dataset_argument,
-                model_name=request.model,
-                max_iterations=request.max_iterations,
-                verbose=False,
-                reasoning_effort=request.reasoning_effort,
-                on_ai_message=handle_ai_message,
-            )
-        except Exception as exc:
-            logger.exception("Failed to initialise agent", exc_info=exc)
-            await session.broadcast(create_event("error", {"message": str(exc)}))
-            await session.broadcast(create_event("status", {"stage": "failed"}))
-            return
+        agent = session.agent
+        recreate_agent = agent is None
+
+        if agent and request.model and request.model != agent.model_name:
+            recreate_agent = True
+
+        if recreate_agent:
+            try:
+                agent = MLEngineerAgent(
+                    dataset_path=dataset_argument,
+                    model_name=request.model,
+                    max_iterations=request.max_iterations,
+                    verbose=False,
+                    reasoning_effort=request.reasoning_effort,
+                    on_ai_message=handle_ai_message,
+                )
+            except Exception as exc:
+                logger.exception("Failed to initialise agent", exc_info=exc)
+                await session.broadcast(create_event("error", {"message": str(exc)}))
+                await session.broadcast(create_event("status", {"stage": "failed"}))
+                return
+            session.agent = agent
+            should_reset_namespace = True
+        else:
+            agent.on_ai_message = handle_ai_message
+            should_reset_namespace = not getattr(agent, "_namespace_initialized", False)
+
+            if request.max_iterations is not None:
+                agent.max_iterations = request.max_iterations
+            if request.reasoning_effort:
+                agent.reasoning_effort = request.reasoning_effort
+
+        session.prompts.append(request.message)
+
+        if not session.messages:
+            session.messages.append(agent.create_system_message())
+
+        human_message = HumanMessage(content=prompt)
+        session.messages.append(human_message)
 
         await session.broadcast(create_event("status", {"stage": "running", "prompt": prompt}))
 
-        agent_future: asyncio.Task = asyncio.create_task(asyncio.to_thread(agent.run, prompt))
-        stream_task = asyncio.create_task(stream_execution_events(session, agent_future))
+        agent_future: asyncio.Task = asyncio.create_task(
+            asyncio.to_thread(
+                agent.run,
+                prompt,
+                reset_namespace=should_reset_namespace,
+                messages=list(session.messages),
+            )
+        )
+        stream_task = asyncio.create_task(
+            stream_execution_events(session, agent_future, start_index=session.history_cursor)
+        )
 
         try:
             result = await agent_future
@@ -328,6 +367,60 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
                 with suppress(asyncio.CancelledError):
                     await stream_task
 
+        # Append new messages instead of replacing entire history
+        run_messages = list(result.get("messages", []))
+        base_len = len(session.messages)
+
+        # Only append messages that are new (beyond what we already sent to the agent)
+        if base_len < len(run_messages):
+            new_messages = run_messages[base_len:]
+            session.messages.extend(new_messages)
+        elif base_len == 0:
+            # First turn - use all returned messages
+            session.messages = run_messages
+        # else: agent returned same or fewer messages, keep our session history
+
+        execution_history = result.get("execution_history", [])
+        session.history_cursor = len(execution_history)
+
+        # Save session-wide conversation log
+        if agent.run_id:
+            session_log_path = Config.RUNS_DIR / f"{agent.run_id}_session.txt"
+            try:
+                with open(session_log_path, 'w') as f:
+                    f.write(f"ML Engineer Agent - Session Log\n")
+                    f.write(f"{'=' * 80}\n")
+                    f.write(f"Session ID: {session.session_id}\n")
+                    f.write(f"Run ID: {agent.run_id}\n")
+                    f.write(f"Dataset: {agent.dataset_name}\n")
+                    f.write(f"Model: {agent.model_name}\n")
+                    f.write(f"Timestamp: {datetime.now().isoformat()}\n")
+                    f.write(f"Total Messages: {len(session.messages)}\n")
+                    f.write(f"{'=' * 80}\n\n")
+
+                    for idx, msg in enumerate(session.messages, 1):
+                        f.write(f"[Message {idx}]\n")
+                        if isinstance(msg, SystemMessage):
+                            f.write(f"Type: SYSTEM\n")
+                            f.write(f"Content:\n{msg.content}\n\n")
+                        elif isinstance(msg, HumanMessage):
+                            f.write(f"Type: USER\n")
+                            f.write(f"Content:\n{msg.content}\n\n")
+                        elif isinstance(msg, AIMessage):
+                            f.write(f"Type: ASSISTANT\n")
+                            f.write(f"Content:\n{msg.content}\n")
+                            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                                f.write(f"\nTool Calls: {len(msg.tool_calls)}\n")
+                                for tc in msg.tool_calls:
+                                    f.write(f"  - {tc.get('name', 'unknown')}\n")
+                            f.write("\n")
+                        else:
+                            f.write(f"Type: {type(msg).__name__}\n")
+                            f.write(f"Content:\n{getattr(msg, 'content', str(msg))}\n\n")
+                        f.write("-" * 80 + "\n\n")
+            except Exception as exc:
+                logger.warning("Failed to save session log: %s", exc)
+
         artifacts_dir_value = result.get("artifacts_dir")
         if not artifacts_dir_value and agent.artifacts_dir:
             artifacts_dir_value = str(agent.artifacts_dir)
@@ -339,7 +432,7 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
             if artifacts_dir_path:
                 notebook_path = str(artifacts_dir_path / f"{agent.dataset_name}_pipeline.ipynb")
                 generate_notebook(
-                    execution_history=result.get("execution_history", []),
+                    execution_history=execution_history,
                     dataset_name=agent.dataset_name,
                     user_prompt=prompt,
                     output_path=notebook_path,

@@ -110,6 +110,7 @@ class MLEngineerAgent:
         self.run_id = None
         self.artifacts_dir = None
         self.current_plan = None
+        self._namespace_initialized = False
 
     @property
     def primary_dataset_path(self) -> Path:
@@ -483,6 +484,27 @@ Begin by creating your TODO plan, then systematically execute it."""
             "next_step": None
         }
 
+    def reset_execution_state(self):
+        """Reset the Python execution namespace and history."""
+        clear_namespace()
+        clear_history()
+        inject_variables(self.get_dataset_path_variables())
+        self._namespace_initialized = True
+
+    def ensure_ready(self, reset_namespace: bool):
+        """Ensure workflow and namespace are initialised."""
+        if reset_namespace or not self._namespace_initialized:
+            self.reset_execution_state()
+
+        self.iteration_count = 0
+
+        if not self.app:
+            self._setup_workflow()
+
+    def create_system_message(self) -> SystemMessage:
+        """Return the system message used to prime the agent."""
+        return SystemMessage(content=self._create_system_prompt())
+
     def _should_continue(self, state: AgentState) -> Literal["continue", "end"]:
         """Determine whether to continue or end"""
         messages = state["messages"]
@@ -499,16 +521,31 @@ Begin by creating your TODO plan, then systematically execute it."""
 
         return "end"
 
-    def run(self, prompt: str) -> dict:
+    def run(
+        self,
+        prompt: str = "",
+        *,
+        reset_namespace: bool = True,
+        messages: Optional[Sequence[BaseMessage]] = None,
+    ) -> dict:
         """
-        Run the agent with a user prompt
+        Run the agent with a user prompt or an existing message history.
 
         Args:
-            prompt: User's task description
+            prompt: Latest user instruction (optional when `messages` already contains it).
+            reset_namespace: Whether to reset the Python execution namespace before running.
+            messages: Optional sequence of LangChain messages to seed the workflow.
 
         Returns:
-            Dictionary with execution results
+            Dictionary with execution results.
         """
+        prompt_text = (prompt or "").strip()
+        namespace_was_reset = reset_namespace or not self._namespace_initialized
+
+        # Prepare execution environment and workflow
+        self.ensure_ready(reset_namespace)
+        self.current_plan = None
+
         # Create run ID and artifacts directory
         self.run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{self.dataset_name}"
         self.artifacts_dir = Config.ARTIFACTS_DIR / self.run_id
@@ -519,8 +556,14 @@ Begin by creating your TODO plan, then systematically execute it."""
             if self.model_name in ["gpt-5", "o1-preview", "o1-mini", "o3-mini"] or self.model_name.startswith("gpt-5"):
                 reasoning_info = f"\nReasoning Effort: {self.reasoning_effort}"
 
-            # Format dataset paths for display
             dataset_display = ", ".join([str(p) for p in self.dataset_paths])
+
+            task_display = prompt_text
+            if not task_display and messages:
+                for msg in reversed(messages):
+                    if isinstance(msg, HumanMessage):
+                        task_display = msg.content
+                        break
 
             self._print_section("🚀 ML ENGINEER AGENT STARTING", f"""
 Run ID: {self.run_id}
@@ -530,36 +573,28 @@ Max Iterations: {self.max_iterations}
 Planning Mode: {'Enabled' if self.planning_mode else 'Disabled'}
 Verbose Mode: Enabled
 
-Task: {prompt}
+Task: {task_display}
+Namespace Reset: {'Yes' if namespace_was_reset else 'No'}
 """, "=")
 
-        # Clear previous execution state
-        clear_namespace()
-        clear_history()
-        self.iteration_count = 0
+            if namespace_was_reset:
+                if self.multiple_datasets:
+                    for name, path in self.dataset_path_map.items():
+                        print(f"   Dataset available: {name} at {path}")
+                else:
+                    print(f"   Dataset available at: {self.primary_dataset_path}")
 
-        # Inject dataset paths (not pre-loaded dataframes)
-        # Agent will load datasets in code using these paths
-        path_variables = self.get_dataset_path_variables()
-
-        if self.verbose:
-            if self.multiple_datasets:
-                for name, path in self.dataset_path_map.items():
-                    print(f"   Dataset available: {name} at {path}")
-            else:
-                print(f"   Dataset available at: {self.primary_dataset_path}")
-
-        inject_variables(path_variables)
-
-        # Setup workflow
-        self._setup_workflow()
-
-        # Create initial state
-        system_message = SystemMessage(content=self._create_system_prompt())
-        user_message = HumanMessage(content=prompt)
+        # Prepare message history
+        if messages:
+            initial_messages = list(messages)
+        else:
+            system_message = self.create_system_message()
+            initial_messages = [system_message]
+            if prompt_text:
+                initial_messages.append(HumanMessage(content=prompt_text))
 
         initial_state = {
-            "messages": [system_message, user_message],
+            "messages": initial_messages,
             "next_step": None
         }
 
