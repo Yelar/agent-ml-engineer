@@ -18,30 +18,39 @@ export function MLDataHandler() {
   useEffect(() => {
     if (!dataStream) return;
 
-    for (const data of dataStream) {
-      if (data.type === "ml-status") {
+    for (const dataPart of dataStream) {
+      // @ts-expect-error - Custom ML data types
+      if (dataPart.type === "ml-status") {
         setMlState((prev) => ({
           ...prev,
-          status: data.content,
+          // @ts-expect-error - Custom ML data types
+          status: dataPart.data,
         }));
-      } else if (data.type === "ml-plan") {
+        // @ts-expect-error - Custom ML data types
+      } else if (dataPart.type === "ml-plan") {
         setMlState((prev) => ({
           ...prev,
-          plan: data.content,
+          // @ts-expect-error - Custom ML data types
+          plan: dataPart.data,
         }));
-      } else if (data.type === "ml-thinking") {
+        // @ts-expect-error - Custom ML data types
+      } else if (dataPart.type === "ml-thinking") {
         setMlState((prev) => ({
           ...prev,
-          thinking: data.content,
+          // @ts-expect-error - Custom ML data types
+          thinking: dataPart.data,
         }));
-      } else if (data.type === "ml-code") {
+        // @ts-expect-error - Custom ML data types
+      } else if (dataPart.type === "ml-code") {
         setMlState((prev) => ({
           ...prev,
           codeBlocks: [
             ...prev.codeBlocks,
             {
-              code: data.content.code,
-              output: data.content.output,
+              // @ts-expect-error - Custom ML data types
+              code: dataPart.data.code,
+              // @ts-expect-error - Custom ML data types
+              output: dataPart.data.output,
               index: prev.codeBlocks.length + 1,
             },
           ],

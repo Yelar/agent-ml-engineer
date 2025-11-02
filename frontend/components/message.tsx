@@ -166,46 +166,48 @@ const PurePreviewMessage = ({
               }
             }
 
-            // if (type === "tool-runMLAnalysis") {
-            //   const { toolCallId, state } = part;
+            if (type === "tool-runMLAnalysis") {
+              const { toolCallId, state } = part;
 
-            //   return (
-            //     <Tool defaultOpen={true} key={toolCallId}>
-            //       <ToolHeader state={state} type="tool-runMLAnalysis" />
-            //       <ToolContent>
-            //         {state === "input-available" && (
-            //           <ToolInput input={part.input} />
-            //         )}
-            //         <MLDataHandler />
-            //         {state === "output-available" && (
-            //           <ToolOutput
-            //             output={JSON.stringify(part.output, null, 2)}
-            //           />
-            //         )}
-            //       </ToolContent>
-            //     </Tool>
-            //   );
-            // }
+              return (
+                <Tool defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type="tool-runMLAnalysis" />
+                  <ToolContent>
+                    {state === "input-available" && (
+                      <ToolInput input={part.input} />
+                    )}
+                    <MLDataHandler />
+                    {state === "output-available" && (
+                      <ToolOutput
+                        errorText={undefined}
+                        output={JSON.stringify(part.output, null, 2)}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
 
-            // if (type === "tool-listDatasets") {
-            //   const { toolCallId, state } = part;
+            if (type === "tool-listDatasets") {
+              const { toolCallId, state } = part;
 
-            //   return (
-            //     <Tool defaultOpen={true} key={toolCallId}>
-            //       <ToolHeader state={state} type="tool-listDatasets" />
-            //       <ToolContent>
-            //         {state === "input-available" && (
-            //           <ToolInput input={part.input} />
-            //         )}
-            //         {state === "output-available" && (
-            //           <ToolOutput
-            //             output={JSON.stringify(part.output, null, 2)}
-            //           />
-            //         )}
-            //       </ToolContent>
-            //     </Tool>
-            //   );
-            // }
+              return (
+                <Tool defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type="tool-listDatasets" />
+                  <ToolContent>
+                    {state === "input-available" && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === "output-available" && (
+                      <ToolOutput
+                        errorText={undefined}
+                        output={JSON.stringify(part.output, null, 2)}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
 
             if (type === "tool-getWeather") {
               const { toolCallId, state } = part;

@@ -110,22 +110,40 @@ class AgentStreamer:
             # Initialize the agent's workflow
             agent._setup_workflow()
             
-            # Load dataset
+            # Load dataset(s)
             from ml_engineer.datasets import load_dataset
             from ml_engineer.python_executor import inject_variables, clear_namespace, clear_history
             
             clear_namespace()
             clear_history()
             
-            df = load_dataset(agent.dataset_path)
-            inject_variables({
-                'df': df,
-                'DATASET_PATH': str(agent.dataset_path),
-                'pd': __import__('pandas'),
-                'np': __import__('numpy'),
-                'plt': __import__('matplotlib.pyplot'),
-                'sns': __import__('seaborn'),
-            })
+            # Handle single or multiple datasets
+            if agent.multiple_datasets:
+                # Load multiple datasets
+                variables = {}
+                for i, (dataset_path, dataset_name) in enumerate(zip(agent.dataset_paths, agent.dataset_names)):
+                    df = load_dataset(dataset_path)
+                    variables[f'df{i+1}' if i > 0 else 'df'] = df
+                    variables[f'DATASET_PATH{i+1}' if i > 0 else 'DATASET_PATH'] = str(dataset_path)
+                # Add common libraries
+                variables.update({
+                    'pd': __import__('pandas'),
+                    'np': __import__('numpy'),
+                    'plt': __import__('matplotlib.pyplot'),
+                    'sns': __import__('seaborn'),
+                })
+                inject_variables(variables)
+            else:
+                # Single dataset (most common case)
+                df = load_dataset(agent.dataset_paths[0])
+                inject_variables({
+                    'df': df,
+                    'DATASET_PATH': str(agent.dataset_paths[0]),
+                    'pd': __import__('pandas'),
+                    'np': __import__('numpy'),
+                    'plt': __import__('matplotlib.pyplot'),
+                    'sns': __import__('seaborn'),
+                })
             
             # Create initial messages
             from langchain_core.messages import SystemMessage, HumanMessage

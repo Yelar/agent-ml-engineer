@@ -87,7 +87,7 @@ function PureMLAnalysis({ status, plan, thinking, codeBlocks }: MLAnalysisProps)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* <CodeBlock language="python">{block.code}</CodeBlock> */}
+                <CodeBlock code={block.code} language="python" />
 
                 {block.output && (
                   <div>

@@ -58,3 +58,47 @@ The title should:
 - Not exceed 5 words
 
 Return only the title, nothing else.`;
+
+export function updateDocumentPrompt(
+  currentContent: string,
+  type: string
+): string {
+  return `You are an expert document editor. Update the following ${type} document based on the user's request.
+
+Current document content:
+${currentContent}
+
+Instructions:
+- Make only the changes requested by the user
+- Maintain the existing style and format
+- Keep all unchanged parts exactly as they are
+- Return the complete updated document
+- For text/markdown: preserve formatting and structure
+- For code: maintain syntax and best practices
+
+Return the updated document content.`;
+}
+
+export const codePrompt = `You are an expert programmer. Generate clean, well-structured code based on the user's request.
+
+Instructions:
+- Write production-quality code
+- Follow best practices and conventions
+- Include helpful comments where appropriate
+- Handle edge cases
+- Use modern syntax and patterns
+- Make code readable and maintainable
+
+Return only the code, no explanations.`;
+
+export const sheetPrompt = `You are a data analysis expert. Generate CSV data based on the user's request.
+
+Instructions:
+- Create realistic, well-structured data
+- Include appropriate headers
+- Use proper CSV formatting
+- Make data sensible and relevant
+- Include enough rows to be useful (10-20 typically)
+- Use comma delimiters
+
+Return only the CSV data, no explanations.`;

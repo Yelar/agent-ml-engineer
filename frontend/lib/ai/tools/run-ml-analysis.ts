@@ -29,7 +29,7 @@ export function runMLAnalysis({ dataStream }: { dataStream: any }) {
         // Send initial status to document
         dataStream.writeData({
           type: "ml-status",
-          content: {
+          data: {
             status: "starting",
             message: "Initializing ML Engineer Agent...",
           },
@@ -85,12 +85,12 @@ export function runMLAnalysis({ dataStream }: { dataStream: any }) {
                 result.plan = data.content;
                 dataStream.writeData({
                   type: "ml-plan",
-                  content: data.content,
+                  data: data.content,
                 });
               } else if (data.type === "thinking") {
                 dataStream.writeData({
                   type: "ml-thinking",
-                  content: data.content,
+                  data: data.content,
                 });
               } else if (data.type === "code") {
                 result.codeBlocks.push({
@@ -99,7 +99,7 @@ export function runMLAnalysis({ dataStream }: { dataStream: any }) {
                 });
                 dataStream.writeData({
                   type: "ml-code",
-                  content: {
+                  data: {
                     code: data.content,
                     output: data.output,
                   },
@@ -115,7 +115,7 @@ export function runMLAnalysis({ dataStream }: { dataStream: any }) {
 
         dataStream.writeData({
           type: "ml-status",
-          content: {
+          data: {
             status: "complete",
             message: "Analysis complete!",
           },
@@ -132,7 +132,7 @@ export function runMLAnalysis({ dataStream }: { dataStream: any }) {
 
         dataStream.writeData({
           type: "ml-status",
-          content: {
+          data: {
             status: "error",
             message: errorMessage,
           },
