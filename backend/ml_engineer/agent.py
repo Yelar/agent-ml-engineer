@@ -1,6 +1,6 @@
 
 
-from typing import TypedDict, Sequence, Literal, Optional, Union, List, Dict
+from typing import TypedDict, Sequence, Literal, Optional, Union, List, Dict, Callable
 import re
 from datetime import datetime
 from pathlib import Path
@@ -40,7 +40,8 @@ class MLEngineerAgent:
         max_iterations: int = None,
         verbose: bool = True,
         planning_mode: bool = True,
-        reasoning_effort: str = None
+        reasoning_effort: str = None,
+        on_ai_message: Optional[Callable[[int, AIMessage], None]] = None,
     ):
         """
         Initialize the ML Engineer Agent
@@ -58,6 +59,7 @@ class MLEngineerAgent:
         self.verbose = verbose
         self.planning_mode = planning_mode
         self.reasoning_effort = reasoning_effort or Config.DEFAULT_REASONING_EFFORT
+        self.on_ai_message = on_ai_message
 
         # Resolve dataset(s) - can be single or multiple
         if isinstance(dataset_path, list):
@@ -373,6 +375,13 @@ Begin by creating your TODO plan, then systematically execute it."""
             print(f"\n🤖 Calling LLM ({self.model_name})...")
 
         response = self.llm_with_tools.invoke(messages)
+
+        if self.on_ai_message and isinstance(response, AIMessage):
+            try:
+                self.on_ai_message(self.iteration_count, response)
+            except Exception as exc:
+                if self.verbose:
+                    print(f"   ⚠️  on_ai_message callback failed: {exc}")
 
         # Display the response content
         if self.verbose and hasattr(response, 'content') and response.content:

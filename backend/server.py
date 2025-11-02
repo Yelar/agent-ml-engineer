@@ -21,10 +21,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from langchain_core.messages import AIMessage
+
 from ml_engineer.agent import MLEngineerAgent
 from ml_engineer.config import Config
 from ml_engineer.notebook_generator import generate_notebook
 from ml_engineer.python_executor import get_execution_history
+from ml_engineer.tag_parser import extract_tagged_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +266,33 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
         dataset_argument = session.dataset_paths
 
     try:
+        loop = asyncio.get_running_loop()
+
+        def handle_ai_message(iteration: int, message: AIMessage) -> None:
+            try:
+                blocks = extract_tagged_blocks(message)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.debug("Failed to parse AI message tags: %s", exc)
+                return
+
+            for tag, content in blocks:
+                if not content:
+                    continue
+                event = create_event(
+                    "agent_tag",
+                    {"tag": tag, "content": content, "iteration": iteration},
+                    step=str(iteration),
+                )
+
+                def _log_future(fut: asyncio.Future) -> None:
+                    try:
+                        fut.result()
+                    except Exception as cb_exc:  # pragma: no cover - defensive
+                        logger.debug("agent_tag broadcast failed: %s", cb_exc)
+
+                future = asyncio.run_coroutine_threadsafe(session.broadcast(event), loop)
+                future.add_done_callback(_log_future)
+
         try:
             agent = MLEngineerAgent(
                 dataset_path=dataset_argument,
@@ -270,6 +300,7 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
                 max_iterations=request.max_iterations,
                 verbose=False,
                 reasoning_effort=request.reasoning_effort,
+                on_ai_message=handle_ai_message,
             )
         except Exception as exc:
             logger.exception("Failed to initialise agent", exc_info=exc)

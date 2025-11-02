@@ -142,6 +142,55 @@ export default function Cell({ event }: CellProps) {
     );
   }
 
+  if (event.type === "agent_tag" && isRecord(event.payload)) {
+    const rawTag =
+      typeof event.payload.tag === "string" ? event.payload.tag.toLowerCase() : "note";
+    const content =
+      typeof event.payload.content === "string" ? event.payload.content : "";
+    const iterationValue = event.payload.iteration;
+    const iterationLabel =
+      typeof iterationValue === "number" || typeof iterationValue === "string"
+        ? String(iterationValue)
+        : stepLabel;
+
+    const titleMap: Record<string, string> = {
+      plan: "Plan Update",
+      think: "Reasoning",
+      solution: "Solution Preview",
+    };
+
+    const accentMap: Record<string, string> = {
+      plan: "text-indigo-300 border-indigo-500/30",
+      think: "text-amber-200 border-amber-400/30",
+      solution: "text-emerald-200 border-emerald-400/30",
+    };
+
+    const badgeMap: Record<string, string> = {
+      plan: "bg-indigo-500/20 text-indigo-200",
+      think: "bg-amber-500/20 text-amber-200",
+      solution: "bg-emerald-500/20 text-emerald-200",
+    };
+
+    const title = titleMap[rawTag] ?? "Agent Insight";
+    const accentClass = accentMap[rawTag] ?? "text-slate-100 border-slate-800/60";
+    const badgeClass = badgeMap[rawTag] ?? "bg-slate-700/40 text-slate-200";
+
+    return (
+      <article className={`animate-cell-enter space-y-3 rounded-3xl border bg-slate-900/80 p-6 shadow-[0_32px_90px_-50px_rgba(15,23,42,0.9)] ${accentClass}`}>
+        <header className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-300">
+          <span className="font-semibold text-slate-100">{title}</span>
+          <div className="flex items-center gap-3">
+            <span className={`rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-wider ${badgeClass}`}>
+              Iter {iterationLabel}
+            </span>
+            {timestamp ? <span className="text-slate-500">{timestamp}</span> : null}
+          </div>
+        </header>
+        {content ? <MarkdownBlock content={content} /> : null}
+      </article>
+    );
+  }
+
   if (
     event.type === "plot" &&
     isRecord(event.payload) &&

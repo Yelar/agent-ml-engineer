@@ -184,6 +184,15 @@ export default function App() {
         return;
       }
 
+      if (event.type === 'agent_tag') {
+        const tagValue = readPayloadField(event.payload, 'tag');
+        const contentValue = readPayloadField(event.payload, 'content');
+        if (pendingAssistantMessageId && tagValue?.toLowerCase() === 'think' && contentValue) {
+          updateMessage(pendingAssistantMessageId, contentValue);
+        }
+        return;
+      }
+
       if (event.type === 'error') {
         const message =
           readPayloadField(event.payload, 'message') ?? 'The agent encountered an unexpected error.';
