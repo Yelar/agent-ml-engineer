@@ -63,7 +63,9 @@ export default function PreSessionView({
     fileInputRef.current?.click();
   };
 
-  const handleDragOver = (event: DragEvent<HTMLDivElement | HTMLTextAreaElement>) => {
+  const handleDragOver = (
+    event: DragEvent<HTMLDivElement | HTMLTextAreaElement>
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     if (!isDragging) {
@@ -71,7 +73,9 @@ export default function PreSessionView({
     }
   };
 
-  const handleDragLeave = (event: DragEvent<HTMLDivElement | HTMLTextAreaElement>) => {
+  const handleDragLeave = (
+    event: DragEvent<HTMLDivElement | HTMLTextAreaElement>
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     if (isDragging) {
@@ -79,7 +83,9 @@ export default function PreSessionView({
     }
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement | HTMLTextAreaElement>) => {
+  const handleDrop = (
+    event: DragEvent<HTMLDivElement | HTMLTextAreaElement>
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     setIsDragging(false);
@@ -104,16 +110,18 @@ export default function PreSessionView({
         className="flex-1 overflow-y-auto px-8 py-12 mt-[150px]"
       >
         {messages.length === 0 ? (
-          <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center text-center">
+          <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center text-center">
             <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-1 text-xs uppercase tracking-[0.3em] text-slate-300/90">
-              Intelligent Data Exploration
+              Autonomous ML Engineering
             </div>
+
             <h1 className="mt-5 text-4xl font-semibold text-slate-50">
-              Ready to explore your datasets
+              Build ML Models by Talking to Your Data
             </h1>
-            <p className="mt-4 max-w-xl text-base text-slate-300">
-              Attach one or more datasets, ask a question, and the notebook
-              workspace will come alive with insights tailored to your goals.
+            <p className="mt-4 max-w-xl text-base text-slate-500">
+              Just upload a dataset and tell the agent your specific goals -
+              it'll explore, engineer features, train models, and explain its
+              reasoning in real time.
             </p>
           </div>
         ) : (

@@ -258,6 +258,10 @@ async def stream_execution_events(
 
 async def run_agent_for_session(session: SessionState, request: ChatRequest) -> None:
     """Execute the ML Engineer agent and stream events back to the client."""
+    # Clear prior notebook history so subsequent runs start fresh
+    session.event_history.clear()
+    session.history_cursor = 0
+
     prompt = request.message.strip()
     await session.broadcast(create_event("status", {"stage": "starting", "prompt": prompt}))
 
