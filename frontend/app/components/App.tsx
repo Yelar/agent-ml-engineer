@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ChatSidebar from '@/app/components/ChatSidebar';
 import NotebookView from '@/app/components/NotebookView';
 import PreSessionView from '@/app/components/PreSessionView';
-import UploadBar from '@/app/components/UploadBar';
 import { useSessionEvents, type EventMsg } from '@/app/hooks/useSessionEvents';
 import type { ChatMessage } from '@/app/types/chat';
 
@@ -317,15 +316,10 @@ export default function App() {
           }`}
         />
         <div className="flex h-full min-h-0 flex-1 flex-col bg-slate-950 overflow-hidden">
-          <UploadBar
-            onFilesSelected={handleFilesSelected}
-            isUploading={uploadState.isUploading}
-            progress={uploadState.progress}
-          />
-          <NotebookView 
-            sessionId={sessionId} 
-            events={events} 
-            isActive={isActive} 
+          <NotebookView
+            sessionId={sessionId}
+            events={events}
+            isActive={isActive}
             isSending={isSending}
             lastPrompt={lastPrompt}
           />
