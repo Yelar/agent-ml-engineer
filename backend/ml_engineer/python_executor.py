@@ -4,15 +4,15 @@ import io
 import sys
 import base64
 import traceback
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
 from contextlib import redirect_stdout, redirect_stderr
 import signal
-from functools import wraps
 
 # Persistent namespace for code execution
 _persistent_namespace: Dict[str, Any] = {}
 _execution_history: List[Dict[str, Any]] = []
 _plot_counter = 0
+HAS_SIGALRM = hasattr(signal, "SIGALRM")
 
 
 def timeout_handler(signum, frame):
@@ -20,20 +20,23 @@ def timeout_handler(signum, frame):
     raise TimeoutError("Code execution exceeded time limit")
 
 
-def run_with_timeout(func, timeout_seconds=60):
-    """Decorator to run function with timeout"""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        # Set the signal handler and alarm
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout_seconds)
-        try:
-            result = func(*args, **kwargs)
-        finally:
-            # Disable the alarm
-            signal.alarm(0)
-        return result
-    return wrapper
+def _start_timeout(timeout_seconds: int):
+    """Start a SIGALRM timeout if supported; returns previous handler."""
+    if not HAS_SIGALRM or timeout_seconds <= 0:
+        return None
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout_seconds)
+    return previous_handler
+
+
+def _clear_timeout(previous_handler):
+    """Restore previous timeout handler if necessary."""
+    if not HAS_SIGALRM:
+        return
+    signal.alarm(0)
+    if previous_handler is not None:
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 class PlotCapture:
@@ -104,19 +107,18 @@ def run_python_repl(command: str, timeout_seconds: int = 60) -> Dict[str, Any]:
 
     try:
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture), plot_capture:
-            # Set timeout
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(timeout_seconds)
+            previous_handler = _start_timeout(timeout_seconds)
 
             try:
                 # Execute the code
                 exec(command, _persistent_namespace)
                 result['success'] = True
+            except TimeoutError:
+                result['error'] = f"Execution timed out after {timeout_seconds} seconds"
             except Exception as e:
                 result['error'] = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
             finally:
-                # Disable alarm
-                signal.alarm(0)
+                _clear_timeout(previous_handler)
 
         # Get captured output
         result['output'] = stdout_capture.getvalue()
