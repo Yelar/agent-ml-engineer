@@ -1,8 +1,9 @@
 
 
-from typing import TypedDict, Sequence, Literal, Optional, Union, List
+from typing import TypedDict, Sequence, Literal, Optional, Union, List, Dict
 import re
 from datetime import datetime
+from pathlib import Path
 
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
@@ -10,7 +11,7 @@ from langgraph.graph import StateGraph, END
 
 from .config import Config
 from .tools import create_tool_list
-from .datasets import DatasetResolver, load_dataset
+from .datasets import DatasetResolver
 from .python_executor import (
     inject_variables,
     get_execution_history,
@@ -70,6 +71,15 @@ class MLEngineerAgent:
             self.dataset_name = self.dataset_names[0]
             self.multiple_datasets = False
 
+        # Map dataset names to resolved paths for convenience
+        self.dataset_path_map: Dict[str, Path] = {
+            name: path for name, path in zip(self.dataset_names, self.dataset_paths)
+        }
+        # Backwards-compatible single-dataset attribute
+        self.dataset_path: Optional[Path] = None
+        if not self.multiple_datasets:
+            self.dataset_path = self.dataset_paths[0]
+
         # Initialize LLM with reasoning_effort for GPT-5
         llm_kwargs = {
             "model": self.model_name,
@@ -99,125 +109,148 @@ class MLEngineerAgent:
         self.artifacts_dir = None
         self.current_plan = None
 
+    @property
+    def primary_dataset_path(self) -> Path:
+        """Return the first dataset path (useful for single-dataset workflows)"""
+        return self.dataset_paths[0]
+
+    def get_dataset_path_variables(self) -> Dict[str, str]:
+        """
+        Create a mapping of dataset path variables to inject into the Python namespace.
+
+        Returns:
+            Dictionary mapping variable names to dataset path strings
+        """
+        if self.multiple_datasets:
+            return {
+                f"DATASET_PATH_{name.upper()}": str(path)
+                for name, path in self.dataset_path_map.items()
+            }
+        return {"DATASET_PATH": str(self.primary_dataset_path)}
+
     def _create_system_prompt(self) -> str:
         """Create the system prompt for the agent"""
         planning_instructions = ""
         if self.planning_mode:
             planning_instructions = """
-**PLANNING REQUIRED:**
-Before starting execution, create a detailed plan:
+**PLANNING MODE ENABLED:**
+
+You MUST start by creating a detailed TODO plan with checkboxes based on the user's task.
 
 <plan>
-## High-Level Strategy
-[Overall approach to solve the task]
-
-## Steps
-1. [Step 1: e.g., Data Exploration]
-   - What to do
-   - What to check
-2. [Step 2: e.g., Data Preprocessing]
-   - What to do
-   - What to check
-3. [Step 3: e.g., Feature Engineering]
-   - What to do
-   - What to check
-4. [Step 4: e.g., Model Building]
-   - What algorithms to try
-   - What metrics to use
-5. [Step 5: e.g., Evaluation & Results]
-   - What to evaluate
-   - How to present results
+**TODO List:**
+- [ ] Step 1: [Your first step based on the task]
+- [ ] Step 2: [Your second step]
+- [ ] Step 3: [Continue as needed...]
 </plan>
 
-After creating the plan, follow it step by step, updating the plan as you learn more about the data.
+Create steps that are specific to the task at hand. Common ML workflow steps include:
+- Data loading and initial exploration
+- Data quality assessment
+- Exploratory data analysis with visualizations
+- Data preprocessing and feature engineering
+- Model selection and training
+- Model evaluation and validation
+- Results interpretation and recommendations
+
+After completing each step, update the plan using these status markers:
+- [✓] Completed successfully (use checkmark ✓)
+- [ ] Pending / Not started
+- [X] Failed or encountered errors
+
+Include the updated plan in your <think> tags whenever you complete a major step.
 """
 
         # Create dataset information string
         if self.multiple_datasets:
-            dataset_info = f"""**Multiple Datasets Available:**
-{chr(10).join(f"- {name}: {path}" for name, path in zip(self.dataset_names, self.dataset_paths))}
+            dataset_list = chr(10).join(f"- {name}: {path}" for name, path in zip(self.dataset_names, self.dataset_paths))
+            path_vars = chr(10).join(f"- `DATASET_PATH_{name.upper()}` = \"{path}\"" for name, path in zip(self.dataset_names, self.dataset_paths))
 
-You have access to multiple datasets. They are loaded as:
-{chr(10).join(f"- df_{name} = {name} dataset" for name in self.dataset_names)}
+            dataset_info = f"""**Multiple Datasets Available:**
+{dataset_list}
+
+**Dataset Path Variables:**
+{path_vars}
+
+**Important:** Datasets are NOT pre-loaded. Load them yourself using appropriate libraries based on file format.
 """
         else:
+            dataset_path = self.dataset_paths[0]
             dataset_info = f"""**Dataset Information:**
-- Dataset path: {self.dataset_paths[0]}
-- Dataset name: {self.dataset_names[0]}"""
+- Path: {dataset_path}
+- Name: {self.dataset_names[0]}
 
-        return f"""You are an expert ML Engineer assistant. Your goal is to help users build complete machine learning pipelines from their datasets.
+**Dataset Path Variable:**
+- `DATASET_PATH` = "{dataset_path}"
+
+**Important:** Dataset is NOT pre-loaded. Load it yourself using appropriate libraries based on file format.
+"""
+
+        return f"""You are an expert ML Engineer AI assistant specialized in building complete, production-quality machine learning pipelines.
 
 {dataset_info}
 
-**Your Capabilities:**
-1. Analyze datasets to understand structure and patterns
-2. Perform exploratory data analysis (EDA)
-3. Create visualizations to reveal insights
-4. Build, train, and evaluate ML models
-5. Generate predictions and recommendations
+**Your Role:**
+Build end-to-end ML solutions through systematic analysis, thoughtful experimentation, and clear communication.
 
-**Execution Environment:**
-- You have access to a persistent Python environment
-- Dataset(s) loaded as pandas DataFrame(s): {'df' if not self.multiple_datasets else ', '.join(f"df_{name}" for name in self.dataset_names)}
-- Common libraries are available: pandas (pd), numpy (np), matplotlib.pyplot (plt), seaborn (sns), sklearn
-- All plots created with matplotlib are automatically captured and saved
-- Variables and imports persist across code executions
+**Python Environment:**
+You have access to a persistent Python REPL with:
+- Dataset path variables (DATASET_PATH or DATASET_PATH_<NAME>)
+- Standard Python libraries available (install others if needed with pip)
+- Automatic plot capture (matplotlib/seaborn plots saved automatically)
+- Persistent namespace (variables and imports persist across executions)
+- Execution timeout: {Config.TIMEOUT_SECONDS}s per code block
+- **Visual feedback**: You can see the plots you generate - they are included in the tool responses
+
+**Getting Started:** Import required libraries and load the dataset(s) using the provided path variables.
 {planning_instructions}
-**Workflow Instructions:**
-At each turn, you should provide your thinking and reasoning. Then you have two options:
+**Structured Workflow:**
 
-1) Use tools to interact with the environment:
-   - Use dataset_info to inspect the dataset structure
-   - Use execute_python to run code and see results
+1. **Think First** - Always wrap your reasoning in <think> tags:
+   <think>
+   - What do I know so far?
+   - What's the next logical step?
+   - What specific analysis or code will help?
+   - How does this relate to my plan?
+   </think>
 
-2) When ready, provide the final solution using <solution> tags.
+2. **Act** - Choose ONE action:
+   a) Use `dataset_info` tool to inspect dataset structure
+   b) Use `execute_python` tool to run code
+   c) Provide final <solution> when complete
 
-**Response Format:**
-Each response should follow this structure:
+3. **Iterate** - Continue until task is complete
 
-<think>
-[Your reasoning about what to do next and why]
-[Analysis of previous results if any]
-[Decision on next action]
-</think>
+**Available Tools:**
+- `dataset_info(dataset_path)`: Get dataset structure, types, statistics, preview
+- `execute_python(code)`: Execute Python code in persistent environment
 
-Then EITHER use a tool (dataset_info or execute_python) OR provide solution:
+**Solution Format:**
+When the task is complete, provide your findings in <solution> tags with relevant sections.
 
 <solution>
 ## Summary
-[Brief overview of the task and approach]
+[Brief overview of what was accomplished]
 
-## Key Findings
-- [Finding 1]
-- [Finding 2]
-...
-
-## ML Pipeline
-[Description of the complete pipeline built]
-
-## Results
-[Model performance and key metrics]
-
-## Recommendations
-[Next steps or recommendations]
+## [Additional sections as appropriate for the task]
+[Results, findings, metrics, visualizations, recommendations, etc.]
 </solution>
 
-**Code Execution Guidelines:**
-- Write clean, well-commented code
-- Create visualizations to support insights
-- Handle missing values and outliers appropriately
-- Use appropriate ML algorithms for the problem
-- Evaluate model performance with relevant metrics
-- Always check for potential issues (data quality, overfitting, etc.)
-- Keep code simple and decomposed into steps
+**Best Practices:**
+✓ Write clean, well-documented code
+✓ Create informative visualizations when helpful
+✓ Handle edge cases appropriately
+✓ Validate your approach and results
+✓ Explain your reasoning and choices
 
-**Important:**
-- Always include <think> tags to show your reasoning
-- Use tools to gather information and execute code
-- Provide <solution> only when the complete pipeline is ready
-- Update your plan as you learn more from the data
+**Critical Rules:**
+• Use <think> tags to show your reasoning
+• Use tools to execute code and gather information
+• Update TODO items in your plan as you progress
+• Base conclusions on actual results, not assumptions
+• Provide <solution> only when task is complete
 
-Begin by creating a plan (if planning mode is enabled), then understanding the dataset, and proceed with systematic analysis and modeling."""
+Begin by creating your TODO plan, then systematically execute it."""
 
     def _setup_workflow(self):
         """Set up the LangGraph workflow"""
@@ -269,6 +302,23 @@ Begin by creating a plan (if planning mode is enabled), then understanding the d
             print(f"   {details}")
         print(f"{'─' * 80}")
 
+    def _save_plan_to_file(self, plan: str):
+        """Save the plan TODO list to a file"""
+        if not self.artifacts_dir:
+            return
+
+        plan_file = self.artifacts_dir / "PLAN.md"
+        with open(plan_file, 'w') as f:
+            f.write(f"# ML Pipeline Plan\n\n")
+            f.write(f"**Run ID:** {self.run_id}\n")
+            f.write(f"**Dataset:** {self.dataset_name}\n")
+            f.write(f"**Updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("---\n\n")
+            f.write(plan)
+
+        if self.verbose:
+            print(f"   💾 Plan saved to: {plan_file}")
+
     def _extract_and_display_tags(self, content: str):
         """Extract and display plan, think, and solution tags"""
         import re
@@ -279,12 +329,21 @@ Begin by creating a plan (if planning mode is enabled), then understanding the d
             plan = plan_match.group(1).strip()
             self._print_section("📋 PLAN", plan, "=")
             self.current_plan = plan
+            # Save plan to file
+            self._save_plan_to_file(plan)
 
         # Extract think
         think_match = re.search(r'<think>(.*?)</think>', content, re.DOTALL | re.IGNORECASE)
         if think_match:
             thinking = think_match.group(1).strip()
             self._print_section("🤔 THINKING", thinking, "-")
+
+            # Check if think contains an updated plan (TODO list with checkboxes)
+            # Recognize: [ ], [X], [x], [✓]
+            if '- [' in thinking and ('[ ]' in thinking or '[X]' in thinking or '[x]' in thinking or '[✓]' in thinking):
+                # Extract the TODO list portion and save it
+                self.current_plan = thinking
+                self._save_plan_to_file(thinking)
 
         # Extract solution
         solution_match = re.search(r'<solution>(.*?)</solution>', content, re.DOTALL | re.IGNORECASE)
@@ -352,7 +411,15 @@ Begin by creating a plan (if planning mode is enabled), then understanding the d
                 if tool_name in tool_map:
                     if self.verbose:
                         print(f"\n🔧 Executing: {tool_name}")
-                        if tool_args:
+
+                        # Display code being executed (if it's execute_python)
+                        if tool_name == "execute_python" and "code" in tool_args:
+                            print(f"\n{'─' * 80}")
+                            print("📝 Code:")
+                            print(f"{'─' * 80}")
+                            print(tool_args["code"])
+                            print(f"{'─' * 80}")
+                        elif tool_args:
                             print(f"   Arguments: {list(tool_args.keys())}")
 
                     try:
@@ -364,9 +431,28 @@ Begin by creating a plan (if planning mode is enabled), then understanding the d
                             preview = result_str[:500] + "..." if len(result_str) > 500 else result_str
                             self._print_section(f"📊 {tool_name} Result", preview, "-")
 
+                        # Create tool message with potential image content
+                        tool_message_content = [{"type": "text", "text": str(result)}]
+
+                        # If this was execute_python, check for generated plots and include them
+                        if tool_name == "execute_python":
+                            from .python_executor import get_execution_history
+                            exec_history = get_execution_history()
+                            if exec_history:
+                                last_execution = exec_history[-1]
+                                if last_execution.get('plots'):
+                                    # Add images to the message content
+                                    for plot_base64 in last_execution['plots']:
+                                        tool_message_content.append({
+                                            "type": "image_url",
+                                            "image_url": {
+                                                "url": f"data:image/png;base64,{plot_base64}"
+                                            }
+                                        })
+
                         tool_messages.append(
                             ToolMessage(
-                                content=str(result),
+                                content=tool_message_content,
                                 tool_call_id=tool_call["id"],
                                 name=tool_name
                             )
@@ -443,31 +529,18 @@ Task: {prompt}
         clear_history()
         self.iteration_count = 0
 
-        # Load dataset(s) into namespace
-        variables_to_inject = {
-            'pd': __import__('pandas'),
-            'np': __import__('numpy'),
-            'plt': __import__('matplotlib.pyplot'),
-            'sns': __import__('seaborn'),
-        }
+        # Inject dataset paths (not pre-loaded dataframes)
+        # Agent will load datasets in code using these paths
+        path_variables = self.get_dataset_path_variables()
 
-        if self.multiple_datasets:
-            # Load multiple datasets with df_<name> convention
-            for name, path in zip(self.dataset_names, self.dataset_paths):
-                df = load_dataset(path)
-                variables_to_inject[f'df_{name}'] = df
-                variables_to_inject[f'DATASET_PATH_{name.upper()}'] = str(path)
-                if self.verbose:
-                    print(f"   Loaded {name}: {df.shape[0]} rows × {df.shape[1]} columns")
-        else:
-            # Single dataset as 'df'
-            df = load_dataset(self.dataset_paths[0])
-            variables_to_inject['df'] = df
-            variables_to_inject['DATASET_PATH'] = str(self.dataset_paths[0])
-            if self.verbose:
-                print(f"   Loaded dataset: {df.shape[0]} rows × {df.shape[1]} columns")
+        if self.verbose:
+            if self.multiple_datasets:
+                for name, path in self.dataset_path_map.items():
+                    print(f"   Dataset available: {name} at {path}")
+            else:
+                print(f"   Dataset available at: {self.primary_dataset_path}")
 
-        inject_variables(variables_to_inject)
+        inject_variables(path_variables)
 
         # Setup workflow
         self._setup_workflow()
@@ -591,27 +664,8 @@ Run ID: {self.run_id}
         clear_history()
         self.iteration_count = 0
 
-        # Load dataset(s) into namespace
-        variables_to_inject = {
-            'pd': __import__('pandas'),
-            'np': __import__('numpy'),
-            'plt': __import__('matplotlib.pyplot'),
-            'sns': __import__('seaborn'),
-        }
-
-        if self.multiple_datasets:
-            # Load multiple datasets with df_<name> convention
-            for name, path in zip(self.dataset_names, self.dataset_paths):
-                df = load_dataset(path)
-                variables_to_inject[f'df_{name}'] = df
-                variables_to_inject[f'DATASET_PATH_{name.upper()}'] = str(path)
-        else:
-            # Single dataset as 'df'
-            df = load_dataset(self.dataset_paths[0])
-            variables_to_inject['df'] = df
-            variables_to_inject['DATASET_PATH'] = str(self.dataset_paths[0])
-
-        inject_variables(variables_to_inject)
+        # Inject dataset paths (not pre-loaded dataframes)
+        inject_variables(self.get_dataset_path_variables())
 
         # Setup workflow
         self._setup_workflow()

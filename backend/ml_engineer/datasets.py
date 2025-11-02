@@ -3,10 +3,14 @@ Dataset management and resolution
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 import pandas as pd
+import copy
 
 from .config import Config
+
+
+_dataset_info_cache: Dict[str, Dict[str, Any]] = {}
 
 
 class DatasetResolver:
@@ -123,7 +127,15 @@ def get_dataset_info(dataset_path: Path) -> dict:
     Returns:
         Dictionary with dataset information
     """
-    df = load_dataset(dataset_path)
+    resolved_path = dataset_path.resolve()
+    stat = resolved_path.stat()
+    cache_key = str(resolved_path)
+
+    cached = _dataset_info_cache.get(cache_key)
+    if cached and cached["mtime"] == stat.st_mtime_ns and cached["size"] == stat.st_size:
+        return copy.deepcopy(cached["info"])
+
+    df = load_dataset(resolved_path)
 
     info = {
         'name': dataset_path.stem,
@@ -141,4 +153,10 @@ def get_dataset_info(dataset_path: Path) -> dict:
     if len(numeric_cols) > 0:
         info['numeric_summary'] = df[numeric_cols].describe().to_dict()
 
-    return info
+    _dataset_info_cache[cache_key] = {
+        "info": info,
+        "mtime": stat.st_mtime_ns,
+        "size": stat.st_size,
+    }
+
+    return copy.deepcopy(info)
