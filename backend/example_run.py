@@ -54,7 +54,7 @@ Example: Id,OfficeCategory 0,3 1,2 2,4 …
     agent = MLEngineerAgent(
         dataset_path=datasets,  # Pass list of datasets
         model_name="gpt-5",  # Use GPT-5
-        max_iterations=20,
+        max_iterations=50,
         verbose=True,  # Show all steps
         planning_mode=True,  # Create a plan first
         reasoning_effort="high"  # Use high reasoning effort

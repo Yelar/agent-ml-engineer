@@ -292,7 +292,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     agent = MLEngineerAgent(
                         dataset_path=session["dataset"],
                         model_name=Config.DEFAULT_MODEL,
-                        max_iterations=12,
+                        max_iterations=52,
                         verbose=False,  # Disable console output
                         planning_mode=True
                     )

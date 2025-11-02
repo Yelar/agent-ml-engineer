@@ -56,7 +56,7 @@ async def stream_analysis(prompt: str, dataset_path: str):
         agent = MLEngineerAgent(
             dataset_path=dataset_path,
             model_name=Config.DEFAULT_MODEL,
-            max_iterations=12,
+            max_iterations=52,
             verbose=False,
             planning_mode=True,
         )

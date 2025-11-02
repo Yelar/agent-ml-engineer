@@ -35,12 +35,14 @@ class MLEngineerAgent:
 
     def __init__(
         self,
-        dataset_path: Union[str, List[str]],
+        dataset_path: Union[str, List[str]] = None,
         model_name: str = None,
         max_iterations: int = None,
         verbose: bool = True,
         planning_mode: bool = True,
-        reasoning_effort: str = None
+        reasoning_effort: str = None,
+        kaggle_competition_id: str = None,
+        kaggle_mode: bool = False
     ):
         """
         Initialize the ML Engineer Agent
@@ -52,32 +54,54 @@ class MLEngineerAgent:
             verbose: If True, print detailed execution steps
             planning_mode: If True, create a plan before executing
             reasoning_effort: Reasoning effort for GPT-5 ("low", "medium", "high")
+            kaggle_competition_id: Kaggle competition ID for competition mode
+            kaggle_mode: If True, use Kaggle competition workflow
         """
         self.model_name = model_name or Config.DEFAULT_MODEL
         self.max_iterations = max_iterations or Config.MAX_ITERATIONS
         self.verbose = verbose
         self.planning_mode = planning_mode
         self.reasoning_effort = reasoning_effort or Config.DEFAULT_REASONING_EFFORT
+        
+        # Kaggle competition mode
+        self.kaggle_mode = kaggle_mode
+        self.kaggle_competition_id = kaggle_competition_id
 
         # Resolve dataset(s) - can be single or multiple
-        if isinstance(dataset_path, list):
-            self.dataset_paths = [DatasetResolver.resolve(path) for path in dataset_path]
-            self.dataset_names = [path.stem for path in self.dataset_paths]
-            self.dataset_name = "_".join(self.dataset_names)  # Combined name for artifacts
-            self.multiple_datasets = True
-        else:
-            self.dataset_paths = [DatasetResolver.resolve(dataset_path)]
-            self.dataset_names = [self.dataset_paths[0].stem]
-            self.dataset_name = self.dataset_names[0]
+        if self.kaggle_mode and kaggle_competition_id:
+            # In Kaggle mode, dataset will be downloaded from competition
+            self.dataset_paths = []
+            self.dataset_names = [kaggle_competition_id]
+            self.dataset_name = kaggle_competition_id
             self.multiple_datasets = False
+            self.dataset_path_map = {}
+        elif dataset_path:
+            if isinstance(dataset_path, list):
+                self.dataset_paths = [DatasetResolver.resolve(path) for path in dataset_path]
+                self.dataset_names = [path.stem for path in self.dataset_paths]
+                self.dataset_name = "_".join(self.dataset_names)  # Combined name for artifacts
+                self.multiple_datasets = True
+            else:
+                self.dataset_paths = [DatasetResolver.resolve(dataset_path)]
+                self.dataset_names = [self.dataset_paths[0].stem]
+                self.dataset_name = self.dataset_names[0]
+                self.multiple_datasets = False
+            
+            # Map dataset names to resolved paths for convenience
+            self.dataset_path_map: Dict[str, Path] = {
+                name: path for name, path in zip(self.dataset_names, self.dataset_paths)
+            }
+        else:
+            # No dataset provided - agent will need to load data during execution
+            self.dataset_paths = []
+            self.dataset_names = ["unknown"]
+            self.dataset_name = "unknown"
+            self.multiple_datasets = False
+            self.dataset_path_map = {}
 
-        # Map dataset names to resolved paths for convenience
-        self.dataset_path_map: Dict[str, Path] = {
-            name: path for name, path in zip(self.dataset_names, self.dataset_paths)
-        }
         # Backwards-compatible single-dataset attribute
         self.dataset_path: Optional[Path] = None
-        if not self.multiple_datasets:
+        if not self.multiple_datasets and self.dataset_paths:
             self.dataset_path = self.dataset_paths[0]
 
         # Initialize LLM with reasoning_effort for GPT-5
@@ -94,7 +118,7 @@ class MLEngineerAgent:
         self.llm = ChatOpenAI(**llm_kwargs)
 
         # Create tools
-        self.tools = create_tool_list()
+        self.tools = create_tool_list(kaggle_mode=self.kaggle_mode)
 
         # Bind tools to LLM
         self.llm_with_tools = self.llm.bind_tools(self.tools)
@@ -110,9 +134,11 @@ class MLEngineerAgent:
         self.current_plan = None
 
     @property
-    def primary_dataset_path(self) -> Path:
+    def primary_dataset_path(self) -> Optional[Path]:
         """Return the first dataset path (useful for single-dataset workflows)"""
-        return self.dataset_paths[0]
+        if self.dataset_paths:
+            return self.dataset_paths[0]
+        return None
 
     def get_dataset_path_variables(self) -> Dict[str, str]:
         """
@@ -126,10 +152,127 @@ class MLEngineerAgent:
                 f"DATASET_PATH_{name.upper()}": str(path)
                 for name, path in self.dataset_path_map.items()
             }
-        return {"DATASET_PATH": str(self.primary_dataset_path)}
+        elif self.primary_dataset_path:
+            return {"DATASET_PATH": str(self.primary_dataset_path)}
+        else:
+            # No datasets (e.g., Kaggle mode where data will be downloaded)
+            return {}
+
+    def _create_kaggle_system_prompt(self) -> str:
+        """Create system prompt specifically for Kaggle competitions"""
+        return f"""You are an expert ML Engineer Agent specialized in Kaggle competitions. 
+
+**COMPETITION MODE**: You're working on Kaggle competition '{self.kaggle_competition_id}'
+
+**Your Goal**: Build a complete ML pipeline that maximizes competition score and generates a submission-ready CSV file.
+
+**Kaggle Workflow**:
+1. **Competition Analysis**: 
+   - Get competition details and understand the problem type
+   - Download competition data (train, test, sample_submission)
+   - Analyze evaluation metric and competition rules
+
+2. **Data Pipeline**:
+   - Load and explore train/test data
+   - Perform EDA appropriate for the problem type
+   - Handle missing values, outliers, feature engineering
+   - Create validation strategy matching competition setup
+
+3. **Modeling Strategy**:
+   - Choose appropriate algorithms for the problem type
+   - Implement cross-validation matching competition evaluation
+   - Optimize for the specific competition metric
+   - Consider ensemble methods if beneficial
+
+4. **MANDATORY Submission Generation**:
+   - Generate predictions on test data using your best model
+   - Format output to match sample_submission.csv exactly
+   - Save as 'submission.csv' in the current directory
+   - ALWAYS end with: kaggle_submit_to_competition() to upload your results
+   - This is REQUIRED - every run must produce a submission file!
+
+**Available Tools**:
+- `kaggle_search_competitions(query, status)`: Search competitions
+- `kaggle_get_competition_details(competition_id)`: Get competition info
+- `kaggle_download_competition_data(competition_id)`: Download competition files (AUTO-FALLBACK: automatically switches to accessible competitions if 403 error)
+- `kaggle_submit_to_competition(competition_id, file_path, message)`: Submit results
+- `kaggle_find_accessible_competition(query)`: Find competitions that don't require rule acceptance
+- `execute_python(code)`: Execute Python code in persistent environment
+
+**AUTOMATED 403 HANDLING**: 
+If a competition requires rule acceptance (403 error), the download tool will AUTOMATICALLY switch to an accessible competition like 'titanic', 'digit-recognizer', or 'house-prices-advanced-regression-techniques'. You'll get a message indicating the switch and can proceed normally with the accessible competition.
+
+**CRITICAL FILE PATH RULE**: 
+When kaggle_download_competition_data returns a result, it includes the full "download_path". 
+ALWAYS use this full path when loading CSV files! For example:
+- If download_path is "/path/to/competitions/titanic"  
+- Load train data as: pd.read_csv("/path/to/competitions/titanic/train.csv")
+- Load test data as: pd.read_csv("/path/to/competitions/titanic/test.csv")
+- NEVER use just "train.csv" - always use the complete path!
+
+**STRICT WORKFLOW ENFORCEMENT**:
+1. **Phases Are MANDATORY**:
+   - Iterations 1-2: Download data + basic info (shape, columns, target distribution)
+   - Iteration 3: Simple feature engineering (fill missing values, encode categoricals)
+   - Iterations 4-5: Build and train a basic model (RandomForest or LogisticRegression)
+   - Iteration 6: Generate predictions on test set
+   - Iteration 7: Create submission.csv file with proper format
+   - Final iteration: Submit to Kaggle using kaggle_submit_to_competition
+
+2. **STOP Endless Exploration**: After 2 iterations of EDA, you MUST move to modeling
+3. **MANDATORY Submission**: Every run MUST end with submission.csv creation and upload
+4. **No Perfectionism**: Use simple approaches that work rather than endless optimization
+
+**CRITICAL SUCCESS PATTERN**:
+✓ Download data → ✓ Basic EDA → ✓ Build model → ✓ Generate predictions → ✓ Create submission.csv → ✓ Upload to Kaggle
+
+**Critical Requirements**:
+✓ Always validate submission format matches sample_submission.csv
+✓ Use competition-specific evaluation metric for validation
+✓ Generate final submission.csv in artifacts directory
+✓ Include submission scoring/validation in your pipeline
+✓ Follow competition rules and data usage guidelines
+
+**Structured Workflow**:
+
+1. **Think First** - Always wrap reasoning in <think> tags:
+   <think>
+   - What competition problem am I solving?
+   - What's the evaluation metric?
+   - What does the data look like?
+   - What's my modeling approach?
+   </think>
+
+2. **Act** - Choose ONE action:
+   a) Use Kaggle tools to get competition info and data
+   b) Use `execute_python` tool to run code
+   c) Provide final <solution> when complete with submission ready
+
+3. **Iterate** - Continue until submission is ready
+
+**Solution Format**:
+<solution>
+## Competition Summary
+[Competition name, problem type, metric]
+
+## Model Performance
+[Cross-validation scores, expected leaderboard performance]
+
+## Submission Details
+[Submission file location, format validation, key features used]
+
+## Next Steps
+[Potential improvements, ensemble opportunities]
+</solution>
+
+Begin by getting competition details and downloading the data."""
 
     def _create_system_prompt(self) -> str:
         """Create the system prompt for the agent"""
+        # Use Kaggle-specific prompt in Kaggle mode
+        if self.kaggle_mode:
+            return self._create_kaggle_system_prompt()
+            
         planning_instructions = ""
         if self.planning_mode:
             planning_instructions = """
@@ -221,6 +364,12 @@ You have access to a persistent Python REPL with:
 
 3. **Iterate** - Continue until task is complete
 
+**AVOID REPETITIVE LOOPS:**
+- Don't repeat the same analysis or visualizations multiple times
+- If you've already explored the data thoroughly, move to modeling
+- Each iteration should make meaningful progress toward the solution
+- When stuck, take a different approach rather than repeating the same steps
+
 **Available Tools:**
 - `dataset_info(dataset_path)`: Get dataset structure, types, statistics, preview
 - `execute_python(code)`: Execute Python code in persistent environment
@@ -276,7 +425,7 @@ Begin by creating your TODO plan, then systematically execute it."""
         )
         workflow.add_edge("execute_tools", "generate")
 
-        # Compile
+        # Compile with proper recursion limit
         self.app = workflow.compile()
 
     def _print_section(self, title: str, content: str = None, symbol: str = "="):
@@ -355,18 +504,36 @@ Begin by creating your TODO plan, then systematically execute it."""
         """Generate node - LLM decides next action"""
         messages = state["messages"]
 
-        # Check iteration limit
-        self.iteration_count += 1
-        if self.verbose:
-            self._print_step(f"Iteration {self.iteration_count}/{self.max_iterations}", "Generating next action...")
-
-        if self.iteration_count > self.max_iterations:
+        # Check iteration limit BEFORE incrementing
+        if self.iteration_count >= self.max_iterations:
             if self.verbose:
                 print(f"\n⚠️  Maximum iterations ({self.max_iterations}) reached. Ending execution.\n")
             return {
                 "messages": messages + [AIMessage(content="<solution>Maximum iterations reached. Please review the work done so far.</solution>")],
                 "next_step": "end"
             }
+
+        # Increment after check
+        self.iteration_count += 1
+        if self.verbose:
+            self._print_step(f"Iteration {self.iteration_count}/{self.max_iterations}", "Generating next action...")
+
+        # Add workflow phase guidance based on iteration count
+        if self.kaggle_mode and self.verbose:
+            if self.iteration_count <= 2:
+                print(f"📋 Current Phase: Data Download & Basic EDA (iteration {self.iteration_count})")
+            elif self.iteration_count <= 3:
+                print(f"🔧 Current Phase: Feature Engineering (iteration {self.iteration_count})")
+            elif self.iteration_count <= 5:
+                print(f"🤖 Current Phase: Model Building (iteration {self.iteration_count})")
+            elif self.iteration_count <= 6:
+                print(f"🎯 Current Phase: Predictions Generation (iteration {self.iteration_count})")
+            elif self.iteration_count <= 7:
+                print(f"📄 Current Phase: Submission Creation (iteration {self.iteration_count})")
+                print("⚠️  MANDATORY: You MUST create submission.csv this iteration!")
+            else:
+                print(f"🚀 Current Phase: SUBMIT TO KAGGLE (iteration {self.iteration_count})")
+                print("🚨 FINAL ITERATION: Upload submission.csv using kaggle_submit_to_competition()!")
 
         # Call LLM
         if self.verbose:
@@ -431,24 +598,19 @@ Begin by creating your TODO plan, then systematically execute it."""
                             preview = result_str[:500] + "..." if len(result_str) > 500 else result_str
                             self._print_section(f"📊 {tool_name} Result", preview, "-")
 
-                        # Create tool message with potential image content
-                        tool_message_content = [{"type": "text", "text": str(result)}]
+                        # Create tool message - OpenAI doesn't allow images in tool messages
+                        # Only include text content
+                        tool_message_content = str(result)
 
-                        # If this was execute_python, check for generated plots and include them
+                        # If this was execute_python and plots were generated, mention them in text
                         if tool_name == "execute_python":
                             from .python_executor import get_execution_history
                             exec_history = get_execution_history()
                             if exec_history:
                                 last_execution = exec_history[-1]
                                 if last_execution.get('plots'):
-                                    # Add images to the message content
-                                    for plot_base64 in last_execution['plots']:
-                                        tool_message_content.append({
-                                            "type": "image_url",
-                                            "image_url": {
-                                                "url": f"data:image/png;base64,{plot_base64}"
-                                            }
-                                        })
+                                    plot_count = len(last_execution['plots'])
+                                    tool_message_content += f"\n\n📊 Generated {plot_count} plot(s) - plots have been saved and are available for review."
 
                         tool_messages.append(
                             ToolMessage(
@@ -479,15 +641,40 @@ Begin by creating your TODO plan, then systematically execute it."""
         messages = state["messages"]
         last_message = messages[-1]
 
+        # Safety check: if we've exceeded max iterations, always end
+        if self.iteration_count >= self.max_iterations:
+            if self.verbose:
+                print(f"🛑 _should_continue: Stopping at iteration {self.iteration_count}/{self.max_iterations}")
+            return "end"
+
         # Check for solution tag
         if isinstance(last_message, AIMessage):
             if "<solution>" in last_message.content.lower():
+                if self.verbose:
+                    print(f"🏁 _should_continue: Found <solution> tag, ending")
                 return "end"
 
             # Check if there are tool calls
             if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+                # Detect repetitive tool calls (loop prevention)
+                if len(messages) >= 6:  # Check last 3 iterations
+                    recent_tool_calls = []
+                    for msg in messages[-6:]:
+                        if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                            recent_tool_calls.extend([call.get('name') for call in msg.tool_calls])
+                    
+                    # If same tool called repeatedly, warn
+                    if len(recent_tool_calls) >= 4 and len(set(recent_tool_calls)) <= 2:
+                        if self.verbose:
+                            print(f"⚠️  _should_continue: Detected repetitive tool calls: {recent_tool_calls}")
+                            print(f"   Consider moving to next phase of workflow")
+                
+                if self.verbose:
+                    print(f"🔄 _should_continue: Found {len(last_message.tool_calls)} tool calls, continuing")
                 return "continue"
 
+        if self.verbose:
+            print(f"🏁 _should_continue: No tool calls, ending")
         return "end"
 
     def run(self, prompt: str) -> dict:
@@ -560,7 +747,9 @@ Task: {prompt}
             print(f"Starting execution workflow...")
             print(f"{'═' * 80}\n")
 
-        final_state = self.app.invoke(initial_state)
+        # Run with much higher recursion limit to avoid LangGraph limits
+        config = {"recursion_limit": max(100, self.max_iterations * 3)}
+        final_state = self.app.invoke(initial_state, config=config)
 
         # Save artifacts
         if self.verbose:
@@ -602,8 +791,112 @@ Run ID: {self.run_id}
             'artifacts_dir': str(self.artifacts_dir),
             'log_path': log_path,
             'iterations': self.iteration_count,
-            'plan': self.current_plan
+            'plan': self.current_plan,
+            'kaggle_mode': self.kaggle_mode,
+            'kaggle_competition_id': self.kaggle_competition_id
         }
+
+    def run_kaggle_competition(self, competition_url_or_id: str, prompt: str = "") -> dict:
+        """
+        Special workflow for Kaggle competitions that automatically handles:
+        - Competition URL parsing or direct ID
+        - Competition data download
+        - Submission generation and upload
+        
+        Args:
+            competition_url_or_id: Kaggle competition URL or direct competition ID
+            prompt: Optional additional instructions for the agent
+            
+        Returns:
+            Dict with run results including submission details
+        """
+        # Parse competition ID from URL if needed
+        if "kaggle.com" in competition_url_or_id:
+            # Extract competition ID from URL
+            import re
+            patterns = [
+                r'kaggle\.com/competitions/([^/?#\s]+)',
+                r'kaggle\.com/c/([^/?#\s]+)',
+            ]
+            
+            competition_id = None
+            for pattern in patterns:
+                match = re.search(pattern, competition_url_or_id)
+                if match:
+                    competition_id = match.group(1).strip()
+                    break
+            
+            if not competition_id:
+                raise ValueError(f"Could not extract competition ID from URL: {competition_url_or_id}")
+        else:
+            competition_id = competition_url_or_id.strip()
+
+        # Update agent state for Kaggle mode
+        self.kaggle_mode = True
+        self.kaggle_competition_id = competition_id
+        self.dataset_name = competition_id
+        
+        # Recreate tools with Kaggle mode enabled
+        self.tools = create_tool_list(kaggle_mode=True)
+        self.llm_with_tools = self.llm.bind_tools(self.tools)
+        
+        # Setup workflow with Kaggle mode
+        self._setup_workflow()
+        
+        # Create Kaggle-specific prompt
+        kaggle_prompt = f"""
+Kaggle Competition: {competition_id}
+URL: https://www.kaggle.com/competitions/{competition_id}
+
+Task: Build a complete ML pipeline for this Kaggle competition and generate a submission-ready CSV.
+
+Your workflow:
+1. Get competition details and download data
+2. Perform exploratory data analysis  
+3. Build and validate ML models
+4. Generate final submission CSV
+5. Optionally submit to competition
+
+Additional Instructions: {prompt}
+
+Begin by getting competition details and downloading the competition data.
+
+**ITERATION-BASED WORKFLOW:**
+- Iterations 1-2: Download + basic dataset info only (no extensive EDA!)
+- Iteration 3: Feature engineering (handle missing values, encode categories)
+- Iterations 4-5: Build simple model (RandomForest/LogisticRegression + train)
+- Iteration 6: Generate predictions on test set
+- Iteration 7: Create submission.csv (match sample_submission format exactly)
+- Final iteration: Use kaggle_submit_to_competition() to upload
+
+**CRITICAL**: Follow this timeline strictly. Don't spend excessive iterations on EDA.
+
+**FOOLPROOF SUBMISSION TEMPLATE** (use when technical issues arise):
+
+STEP 1: Simple preprocessing and model training
+STEP 2: Generate predictions  
+STEP 3: Create submission DataFrame with PassengerId and Survived columns
+STEP 4: Save as submission.csv with to_csv(index=False)
+STEP 5: Use kaggle_submit_to_competition() to upload
+
+Key points:
+- Use LabelEncoder for categorical variables
+- Fill missing values with median/mode  
+- Use RandomForestClassifier with basic features
+- Format: PassengerId, Survived columns only
+
+**ERROR RECOVERY**: If you encounter errors, use this template with the correct file paths.
+"""
+        
+        if self.verbose:
+            self._print_section("🏆 KAGGLE COMPETITION MODE", f"""
+Competition ID: {competition_id}
+Competition URL: https://www.kaggle.com/competitions/{competition_id}
+Additional Instructions: {prompt or 'None'}
+""", "=")
+
+        # Run the standard workflow with Kaggle prompt
+        return self.run(kaggle_prompt)
 
     def _extract_solution(self, content: str) -> str:
         """Extract solution from AI response"""

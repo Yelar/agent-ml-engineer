@@ -122,6 +122,7 @@ class ChatRequest(BaseModel):
     model: Optional[str] = Field(None, description="Override the default model")
     reasoning_effort: Optional[str] = Field(None, description="Reasoning effort for GPT-5 family models")
     max_iterations: Optional[int] = Field(None, description="Override maximum agent iterations")
+    kaggle_competition_url: Optional[str] = Field(None, description="Kaggle competition URL or ID for competition mode")
 
 
 class ChatResponse(BaseModel):
@@ -256,13 +257,38 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
 
     submissions_before = _snapshot_submission_files()
 
-    dataset_argument: Any
-    if len(session.dataset_paths) == 1:
-        dataset_argument = session.dataset_paths[0]
-    else:
-        dataset_argument = session.dataset_paths
+    # Handle Kaggle competition mode
+    if request.kaggle_competition_url:
+        # Kaggle mode - no dataset upload needed
+        try:
+            agent = MLEngineerAgent(
+                dataset_path=None,  # No dataset needed for Kaggle mode
+                model_name=request.model,
+                max_iterations=request.max_iterations,
+                verbose=False,
+                reasoning_effort=request.reasoning_effort,
+            )
+        except Exception as exc:
+            logger.exception("Failed to initialise Kaggle agent", exc_info=exc)
+            await session.broadcast(create_event("error", {"message": str(exc)}))
+            await session.broadcast(create_event("status", {"stage": "failed"}))
+            return
 
-    try:
+        await session.broadcast(create_event("status", {"stage": "running", "prompt": prompt}))
+        
+        # Run Kaggle competition workflow
+        agent_future: asyncio.Task = asyncio.create_task(
+            asyncio.to_thread(agent.run_kaggle_competition, request.kaggle_competition_url, prompt)
+        )
+        stream_task = asyncio.create_task(stream_execution_events(session, agent_future))
+    else:
+        # Standard mode with uploaded datasets
+        dataset_argument: Any
+        if len(session.dataset_paths) == 1:
+            dataset_argument = session.dataset_paths[0]
+        else:
+            dataset_argument = session.dataset_paths
+
         try:
             agent = MLEngineerAgent(
                 dataset_path=dataset_argument,
@@ -279,6 +305,7 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
 
         await session.broadcast(create_event("status", {"stage": "running", "prompt": prompt}))
 
+        # Run standard workflow
         agent_future: asyncio.Task = asyncio.create_task(asyncio.to_thread(agent.run, prompt))
         stream_task = asyncio.create_task(stream_execution_events(session, agent_future))
 
@@ -400,6 +427,18 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
         session.current_task = None
 
 
+@app.post("/kaggle-session", response_model=UploadResponse)
+async def create_kaggle_session() -> UploadResponse:
+    """Create a session for Kaggle competition mode (no file upload required)."""
+    session_id = session_manager.generate_session_id()
+    
+    # Create session with empty dataset paths for Kaggle mode
+    await session_manager.create_session(session_id=session_id, dataset_paths=[])
+    logger.info("Created Kaggle session %s", session_id)
+
+    return UploadResponse(session_id=session_id, datasets=[])
+
+
 @app.post("/upload", response_model=UploadResponse)
 async def upload_datasets(files: List[UploadFile] = File(...)) -> UploadResponse:
     """Upload one or more datasets and initialise a session."""
@@ -443,10 +482,18 @@ async def chat(request: ChatRequest) -> ChatResponse:
     if session.current_task and not session.current_task.done():
         raise HTTPException(status_code=409, detail="Agent already processing a prompt for this session")
 
+    # Validate input - either datasets or Kaggle competition URL required
+    if not session.dataset_paths and not request.kaggle_competition_url:
+        raise HTTPException(
+            status_code=400, 
+            detail="Either upload datasets or provide a Kaggle competition URL"
+        )
+
     session.prompts.append(request.message)
     session.current_task = asyncio.create_task(run_agent_for_session(session, request))
 
-    return ChatResponse(reply="Agent is processing your request.")
+    mode_description = "Kaggle competition" if request.kaggle_competition_url else "dataset analysis"
+    return ChatResponse(reply=f"Agent is processing your {mode_description} request.")
 
 
 @app.websocket("/sessions/{session_id}/events")

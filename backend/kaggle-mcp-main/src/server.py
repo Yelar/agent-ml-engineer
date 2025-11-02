@@ -61,6 +61,218 @@ def run_server():
 
 
     @mcp.tool()
+    async def search_kaggle_competitions(query: str = "", status: str = "all") -> str:
+        """Search Kaggle competitions by query and status.
+        Args:
+            query: Search term for competition title/description.
+            status: Competition status ('all', 'active', 'completed'). Default 'all'.
+        """
+        if not api:
+            return json.dumps({"error": "Kaggle API not authenticated or available."})
+
+        print(f"Searching competitions for: '{query}' with status: {status}")
+        try:
+            # Map status to Kaggle API parameters
+            status_map = {
+                "active": "active",
+                "completed": "completed", 
+                "all": None
+            }
+            
+            search_results = api.competition_list(search=query, category=status_map.get(status))
+            if not search_results:
+                return "No competitions found matching the query."
+
+            # Format results as JSON
+            results_list = [
+                {
+                    "ref": getattr(comp, 'ref', 'N/A'),
+                    "title": getattr(comp, 'title', 'N/A'),
+                    "description": getattr(comp, 'description', 'N/A')[:200] + "...",
+                    "url": f"https://www.kaggle.com/competitions/{getattr(comp, 'ref', '')}",
+                    "deadline": str(getattr(comp, 'deadline', 'N/A')),
+                    "category": getattr(comp, 'category', 'N/A'),
+                    "reward": getattr(comp, 'reward', 'N/A'),
+                    "team_count": getattr(comp, 'teamCount', 0),
+                    "user_has_entered": getattr(comp, 'userHasEntered', False)
+                }
+                for comp in search_results[:10]  # Limit to 10 results
+            ]
+            return json.dumps(results_list, indent=2)
+        except Exception as e:
+            print(f"Error searching competitions for '{query}': {e}")
+            return json.dumps({"error": f"Error processing search: {str(e)}"})
+
+    @mcp.tool()
+    async def get_competition_details(competition_id: str) -> str:
+        """Get comprehensive details about a Kaggle competition.
+        Args:
+            competition_id: The competition identifier (e.g., 'titanic').
+        """
+        if not api:
+            return json.dumps({"error": "Kaggle API not authenticated or available."})
+
+        print(f"Getting details for competition: {competition_id}")
+        try:
+            # Get basic competition info
+            competition = api.competition_view(competition_id)
+            
+            # Get leaderboard info
+            try:
+                leaderboard = api.competition_leaderboard_view(competition_id)
+                leaderboard_info = {
+                    "submission_count": len(leaderboard),
+                    "top_score": leaderboard[0].score if leaderboard else None
+                }
+            except:
+                leaderboard_info = {"submission_count": 0, "top_score": None}
+
+            details = {
+                "id": competition_id,
+                "title": getattr(competition, 'title', 'N/A'),
+                "description": getattr(competition, 'description', 'N/A'),
+                "evaluation_metric": getattr(competition, 'evaluationMetric', 'N/A'),
+                "deadline": str(getattr(competition, 'deadline', 'N/A')),
+                "category": getattr(competition, 'category', 'N/A'),
+                "reward": getattr(competition, 'reward', 'N/A'),
+                "team_count": getattr(competition, 'teamCount', 0),
+                "user_has_entered": getattr(competition, 'userHasEntered', False),
+                "url": f"https://www.kaggle.com/competitions/{competition_id}",
+                "leaderboard_info": leaderboard_info
+            }
+            return json.dumps(details, indent=2)
+        except Exception as e:
+            print(f"Error getting competition details for '{competition_id}': {e}")
+            return json.dumps({"error": f"Error getting competition details: {str(e)}"})
+
+    @mcp.tool()
+    async def download_competition_data(competition_id: str, download_path: str = None) -> str:
+        """Download all competition files including datasets, sample submissions, and descriptions.
+        Args:
+            competition_id: The competition identifier (e.g., 'titanic').
+            download_path: Optional path to download files. Defaults to 'competitions/<competition_id>'.
+        """
+        if not api:
+            return json.dumps({"error": "Kaggle API not authenticated or available."})
+
+        print(f"Downloading competition data for: {competition_id}")
+        
+        # Determine download path
+        try:
+            project_root = Path(__file__).parent.parent.resolve()
+        except NameError:
+            project_root = Path.cwd()
+
+        if not download_path:
+            download_path_obj = project_root / "competitions" / competition_id
+        else:
+            download_path_obj = project_root / Path(download_path)
+            download_path_obj = download_path_obj.resolve()
+
+        # Ensure download directory exists
+        try:
+            download_path_obj.mkdir(parents=True, exist_ok=True)
+            print(f"Download directory: {download_path_obj}")
+        except OSError as e:
+            return json.dumps({"error": f"Error creating download directory '{download_path_obj}': {e}"})
+
+        try:
+            # Download competition files
+            api.competition_download_files(competition_id, path=str(download_path_obj), quiet=False)
+            
+            # List downloaded files
+            downloaded_files = list(download_path_obj.rglob("*"))
+            file_list = [str(f.relative_to(download_path_obj)) for f in downloaded_files if f.is_file()]
+            
+            result = {
+                "success": True,
+                "competition_id": competition_id,
+                "download_path": str(download_path_obj),
+                "downloaded_files": file_list,
+                "file_count": len(file_list)
+            }
+            return json.dumps(result, indent=2)
+            
+        except Exception as e:
+            print(f"Error downloading competition data for '{competition_id}': {e}")
+            if "404" in str(e):
+                return json.dumps({"error": f"Competition '{competition_id}' not found or access denied."})
+            return json.dumps({"error": f"Error downloading competition data: {str(e)}"})
+
+    @mcp.tool()
+    async def submit_to_competition(competition_id: str, submission_file_path: str, message: str = "") -> str:
+        """Submit a CSV file to a Kaggle competition.
+        Args:
+            competition_id: The competition identifier (e.g., 'titanic').
+            submission_file_path: Path to the CSV submission file.
+            message: Optional submission message/description.
+        """
+        if not api:
+            return json.dumps({"error": "Kaggle API not authenticated or available."})
+
+        print(f"Submitting to competition: {competition_id}")
+        print(f"Submission file: {submission_file_path}")
+
+        # Validate submission file exists
+        submission_path = Path(submission_file_path)
+        if not submission_path.exists():
+            return json.dumps({"error": f"Submission file not found: {submission_file_path}"})
+
+        if not submission_path.suffix.lower() == '.csv':
+            return json.dumps({"error": f"Submission file must be CSV format: {submission_file_path}"})
+
+        try:
+            # Submit to competition
+            result = api.competition_submit(
+                file_name=str(submission_path), 
+                message=message or f"Submission via ML Engineer Agent",
+                competition=competition_id
+            )
+            
+            return json.dumps({
+                "success": True,
+                "competition_id": competition_id,
+                "submission_file": submission_file_path,
+                "message": message,
+                "result": str(result)
+            }, indent=2)
+            
+        except Exception as e:
+            print(f"Error submitting to competition '{competition_id}': {e}")
+            return json.dumps({"error": f"Error submitting to competition: {str(e)}"})
+
+    @mcp.tool()
+    async def parse_kaggle_url(kaggle_url: str) -> str:
+        """Extract competition ID from a Kaggle competition URL.
+        Args:
+            kaggle_url: Full Kaggle competition URL.
+        """
+        try:
+            # Handle various URL formats
+            import re
+            
+            # Extract competition ID from URL
+            patterns = [
+                r'kaggle\.com/competitions/([^/?]+)',  # Standard format
+                r'kaggle\.com/c/([^/?]+)',             # Short format
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, kaggle_url)
+                if match:
+                    competition_id = match.group(1)
+                    return json.dumps({
+                        "success": True,
+                        "competition_id": competition_id,
+                        "url": kaggle_url
+                    })
+            
+            return json.dumps({"error": f"Could not extract competition ID from URL: {kaggle_url}"})
+            
+        except Exception as e:
+            return json.dumps({"error": f"Error parsing Kaggle URL: {str(e)}"})
+
+    @mcp.tool()
     async def download_kaggle_dataset(dataset_ref: str, download_path: str | None = None) -> str:
         """Downloads files for a specific Kaggle dataset.
         Args:

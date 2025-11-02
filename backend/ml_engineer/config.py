@@ -27,7 +27,7 @@ class Config:
     ARTIFACTS_DIR = BASE_DIR / "artifacts"
 
     # Agent settings
-    MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "15"))
+    MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "55"))
     TIMEOUT_SECONDS = int(os.getenv("TIMEOUT_SECONDS", "60"))
 
     # Execution settings
