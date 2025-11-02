@@ -40,8 +40,11 @@ export default function App() {
     isUploading: boolean;
     progress: UploadProgress | null;
   }>({ isUploading: false, progress: null });
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const processedEventsRef = useRef<Set<string>>(new Set());
+  const layoutRef = useRef<HTMLDivElement | null>(null);
 
   const { events, resetEvents } = useSessionEvents(sessionId, {
     connect: Boolean(sessionId),
@@ -241,6 +244,35 @@ export default function App() {
     });
   }, [events, handleEvent]);
 
+  useEffect(() => {
+    if (!isResizingSidebar) return undefined;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!layoutRef.current) return;
+      const { left } = layoutRef.current.getBoundingClientRect();
+      const newWidth = event.clientX - left;
+      const clamped = Math.min(Math.max(newWidth, 240), 520);
+      setSidebarWidth(clamped);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingSidebar(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingSidebar]);
+
+  const startResizing = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsResizingSidebar(true);
+  }, []);
+
   const layout = useMemo(() => {
     if (!isActive) {
       return (
@@ -257,14 +289,22 @@ export default function App() {
     }
 
     return (
-      <div className="grid h-screen grid-cols-[320px_1fr] overflow-hidden bg-slate-100 text-slate-900">
-        <ChatSidebar
-          messages={messages}
-          onSend={handleSend}
-          isSending={isSending}
-          canSend={Boolean(sessionId)}
+      <div ref={layoutRef} className="flex h-screen min-h-0 bg-slate-950 text-slate-100">
+        <div style={{ width: sidebarWidth }} className="flex h-full min-h-0">
+          <ChatSidebar
+            messages={messages}
+            onSend={handleSend}
+            isSending={isSending}
+            canSend={Boolean(sessionId)}
+          />
+        </div>
+        <div
+          onMouseDown={startResizing}
+          className={`w-1 cursor-col-resize bg-slate-900/70 transition-colors hover:bg-slate-700/80 ${
+            isResizingSidebar ? 'bg-slate-600' : ''
+          }`}
         />
-        <div className="flex h-screen flex-col overflow-hidden bg-white">
+        <div className="flex h-full min-h-0 flex-1 flex-col bg-slate-950 overflow-hidden">
           <UploadBar
             onFilesSelected={handleFilesSelected}
             isUploading={uploadState.isUploading}
@@ -283,7 +323,8 @@ export default function App() {
     messages,
     sessionId,
     uploadState,
+    sidebarWidth,
   ]);
 
-  return layout;
+  return <div className="bg-slate-950 text-slate-100">{layout}</div>;
 }

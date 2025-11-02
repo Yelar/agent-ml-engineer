@@ -22,8 +22,8 @@ export default function UploadBar({ onFilesSelected, isUploading, progress }: Up
   };
 
   return (
-    <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-4">
-      <label className="relative inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-blue-600">
+    <div className="flex shrink-0 items-center justify-between border-b border-slate-900 bg-slate-950/90 px-8 py-4 text-slate-200">
+      <label className="relative inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-200">
         <input
           type="file"
           accept=".csv"
@@ -33,12 +33,14 @@ export default function UploadBar({ onFilesSelected, isUploading, progress }: Up
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
         />
         <span>
-          {isUploading && progress ? `Uploading ${progress.processed}/${progress.total}` : 'Upload CSVs'}
+          {isUploading && progress
+            ? `Uploading ${progress.processed}/${progress.total}`
+            : 'Upload CSVs'}
         </span>
       </label>
       <button
         type="button"
-        className="rounded-md px-3 py-1 text-sm text-slate-500 transition hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-md px-3 py-1 text-sm text-slate-400 transition hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
         disabled
       >
         Export Notebook
