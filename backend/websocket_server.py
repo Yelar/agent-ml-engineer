@@ -117,15 +117,19 @@ class AgentStreamer:
             clear_namespace()
             clear_history()
             
-            df = load_dataset(agent.dataset_path)
-            inject_variables({
-                'df': df,
-                'DATASET_PATH': str(agent.dataset_path),
+            namespace_variables = {
                 'pd': __import__('pandas'),
                 'np': __import__('numpy'),
                 'plt': __import__('matplotlib.pyplot'),
                 'sns': __import__('seaborn'),
-            })
+            }
+
+            namespace_variables.update(agent.get_dataset_path_variables())
+
+            if not agent.multiple_datasets:
+                namespace_variables['df'] = load_dataset(agent.primary_dataset_path)
+
+            inject_variables(namespace_variables)
             
             # Create initial messages
             from langchain_core.messages import SystemMessage, HumanMessage
@@ -415,4 +419,3 @@ if __name__ == "__main__":
     print("=" * 80 + "\n")
     
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
-

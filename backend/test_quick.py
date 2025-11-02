@@ -21,6 +21,9 @@ try:
     print(f"   ✓ Dataset: {agent.dataset_name}")
     print(f"   ✓ Model: {agent.model_name}")
     print(f"   ✓ Tools: {len(agent.tools)}")
+    path_vars = agent.get_dataset_path_variables()
+    assert "DATASET_PATH" in path_vars
+    print(f"   ✓ Dataset path variable injected: {path_vars['DATASET_PATH']}")
 except Exception as e:
     print(f"   ✗ Error: {e}")
     sys.exit(1)

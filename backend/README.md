@@ -23,11 +23,16 @@ That's it! The agent will build a complete ML pipeline with planning, execution,
 
 - **Automated ML Pipeline Creation**: Describe your task in natural language, and the agent builds the complete pipeline
 - **Multiple Dataset Support**: Work with train/test splits or multiple related datasets simultaneously
+- **Smart Planning**: Creates TODO lists with status tracking (`[✓]` completed, `[ ]` pending, `[X]` failed) saved to PLAN.md
 - **Dataset Analysis**: Automatic exploratory data analysis with visualizations
 - **Model Building**: Trains and evaluates ML models appropriate for your data
-- **Artifact Storage**: All plots, code chunks, and outputs are saved for later use
-- **Jupyter Notebook Generation**: Generates a complete, executable Jupyter notebook of the entire pipeline
+- **Artifact Storage**: All plots, code chunks, plans, and outputs are saved for later use
+- **Jupyter Notebook Generation**: Deterministically converts executed code chunks into separate notebook cells with proper formatting
 - **Persistent Execution**: Code executions are connected - variables and imports persist across steps
+- **Flexible System Prompt**: Generic, task-adaptive prompt without hardcoded assumptions or library requirements
+- **Readable Code Display**: Executed code shown in terminal with proper formatting (multi-line, not compressed)
+- **Manual Dataset Loading**: Datasets not pre-loaded - agent writes code to load them, making execution more transparent
+- **Visual Feedback Loop**: Agent can see the plots it generates - images included in message history for iterative refinement
 
 ## Architecture
 
@@ -205,14 +210,33 @@ backend/
 │   └── 20241102_143022_sample_sales.txt     # Conversation log with full trace
 ├── artifacts/
 │   └── 20241102_143022_sample_sales/
+│       ├── PLAN.md                           # TODO list with checkboxes [X] / [ ]
 │       ├── plot_001.png                      # Generated visualizations
 │       ├── plot_002.png
 │       ├── plot_003.png
 │       └── sample_sales_pipeline.ipynb       # Complete Jupyter notebook
 ```
 
+**PLAN.md** contains the agent's TODO list with progress tracking:
+```markdown
+**TODO List:**
+- [✓] Step 1: Data Exploration and Understanding
+- [✓] Step 2: Data Quality Assessment
+- [ ] Step 3: Model Training (in progress)
+- [X] Step 4: Feature Engineering (failed - needs retry)
+- [ ] Step 5: Model Evaluation
+```
+
+**Status Markers:**
+- `[✓]` = Completed successfully
+- `[ ]` = Pending / Not started
+- `[X]` = Failed or encountered errors
+
 **To view results**:
 ```bash
+# View the plan
+cat artifacts/*/PLAN.md
+
 # Open Jupyter notebook
 jupyter notebook artifacts/*/sample_sales_pipeline.ipynb
 
@@ -263,7 +287,7 @@ The agent follows a ReAct-style loop:
 - **Plots**: Saved as PNG files
 - **Code history**: All executed code chunks stored
 - **Conversation log**: Complete agent reasoning and outputs
-- **Jupyter notebook**: Executable notebook with all steps
+- **Jupyter notebook**: Each executed code chunk becomes a separate cell (deterministic, preserves execution order)
 
 ## Tools Available to Agent
 

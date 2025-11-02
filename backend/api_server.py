@@ -68,17 +68,21 @@ async def stream_analysis(prompt: str, dataset_path: str):
         clear_namespace()
         clear_history()
 
-        df = load_dataset(agent.dataset_path)
-        inject_variables(
-            {
-                "df": df,
-                "DATASET_PATH": str(agent.dataset_path),
-                "pd": __import__("pandas"),
-                "np": __import__("numpy"),
-                "plt": __import__("matplotlib.pyplot"),
-                "sns": __import__("seaborn"),
-            }
-        )
+        namespace_variables = {
+            "pd": __import__("pandas"),
+            "np": __import__("numpy"),
+            "plt": __import__("matplotlib.pyplot"),
+            "sns": __import__("seaborn"),
+        }
+
+        # Inject dataset path helpers used by the agent
+        namespace_variables.update(agent.get_dataset_path_variables())
+
+        # For single-dataset workflows, preload the DataFrame for convenience
+        if not agent.multiple_datasets:
+            namespace_variables["df"] = load_dataset(agent.primary_dataset_path)
+
+        inject_variables(namespace_variables)
 
         # Send initial status
         yield f"data: {json.dumps({'type': 'status', 'content': 'Starting analysis...'})}\n\n"
@@ -222,4 +226,3 @@ if __name__ == "__main__":
     print("=" * 80 + "\n")
 
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
-

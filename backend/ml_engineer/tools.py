@@ -14,8 +14,14 @@ from .config import Config
 @tool
 def dataset_info(dataset_path: Annotated[str, "Path to the dataset file"]) -> str:
     """
-    Get comprehensive information about a dataset including columns, types, missing values, and preview.
-    Use this tool first to understand the structure of the dataset before performing any analysis.
+    Get comprehensive information about a dataset including:
+    - Shape (rows and columns)
+    - Column names and data types
+    - Missing values analysis
+    - Numeric summary statistics
+    - Data preview (first 5 rows)
+
+    Use this before loading data to understand its structure.
     """
     try:
         info = get_dataset_info(Path(dataset_path))
@@ -50,19 +56,14 @@ def dataset_info(dataset_path: Annotated[str, "Path to the dataset file"]) -> st
 @tool
 def execute_python(code: Annotated[str, "Python code to execute"]) -> str:
     """
-    Execute Python code in a persistent namespace. Variables and imports persist across calls.
-    The dataset is available as a pandas DataFrame in the variable 'df'.
-    Common libraries (pandas, numpy, matplotlib, seaborn, sklearn) are pre-imported.
+    Execute Python code in a persistent namespace.
 
-    Use this tool to:
-    - Perform exploratory data analysis
-    - Create visualizations (plots are automatically captured)
-    - Build and train ML models
-    - Generate predictions
-    - Perform any data processing or analysis
+    - Variables and imports persist across calls
+    - Dataset path(s) available as DATASET_PATH or DATASET_PATH_<NAME> variables
+    - Plots (matplotlib/seaborn) automatically captured and saved
+    - Execution timeout enforced for safety
 
-    The code should be complete and executable. Plots created with matplotlib will be
-    automatically captured and saved.
+    Use this to run any Python code: data loading, analysis, modeling, visualization, etc.
     """
     try:
         result = run_python_repl(code, timeout_seconds=Config.TIMEOUT_SECONDS)
