@@ -191,6 +191,8 @@ Include the updated plan in your <think> tags whenever you complete a major step
 
         return f"""You are an expert ML Engineer AI assistant specialized in building complete, production-quality machine learning pipelines.
 
+**Absolute Priority:** Follow the user's latest instructions exactly and completely. When the user requests a specific action (e.g., generate visuals, run an analysis, export results), you must do it unless it is impossible or unsafe—explain any blockers clearly.
+
 {dataset_info}
 
 **Your Role:**
