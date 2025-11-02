@@ -7,11 +7,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import shutil
 import uuid
 from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 from urllib.parse import quote, unquote
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
@@ -146,6 +147,8 @@ def _build_public_url(file_path: Path, base_dir: Path, source_label: str) -> Opt
 
     Returns None if the file is not inside the supplied base directory.
     """
+    submissions_before = _snapshot_submission_files()
+
     try:
         relative_path = file_path.relative_to(base_dir)
     except ValueError:
@@ -154,6 +157,49 @@ def _build_public_url(file_path: Path, base_dir: Path, source_label: str) -> Opt
     safe_path = quote(relative_path.as_posix())
     base = PUBLIC_BASE_URL.rstrip("/")
     return f"{base}/download?source={source_label}&path={safe_path}"
+
+
+def _snapshot_submission_files() -> Set[Path]:
+    """Capture existing submission-like CSV files before the agent runs."""
+    patterns = ["submission.csv", "submission_*.csv", "submission-*.csv"]
+    seen: Set[Path] = set()
+
+    for pattern in patterns:
+        for candidate in Config.BASE_DIR.glob(pattern):
+            if candidate.is_file():
+                seen.add(candidate.resolve())
+    return seen
+
+
+def _collect_new_submissions(previous: Set[Path], artifacts_dir: Path) -> List[Path]:
+    """
+    Copy any newly created submission CSVs into the artifacts directory and
+    return their new paths.
+    """
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    collected: List[Path] = []
+
+    current = _snapshot_submission_files()
+    new_files = [path for path in current if path not in previous]
+
+    for submission_path in new_files:
+        if artifacts_dir in submission_path.parents:
+            collected.append(submission_path)
+            continue
+
+        target = artifacts_dir / submission_path.name
+        counter = 1
+        while target.exists():
+            target = artifacts_dir / f"{submission_path.stem}_{counter}{submission_path.suffix}"
+            counter += 1
+
+        try:
+            shutil.copy2(submission_path, target)
+            collected.append(target)
+        except OSError as exc:
+            logger.warning("Failed to copy submission file %s: %s", submission_path, exc)
+
+    return collected
 
 
 async def stream_execution_events(
@@ -247,15 +293,16 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
                 with suppress(asyncio.CancelledError):
                     await stream_task
 
+        artifacts_dir_value = result.get("artifacts_dir")
+        if not artifacts_dir_value and agent.artifacts_dir:
+            artifacts_dir_value = str(agent.artifacts_dir)
+
+        artifacts_dir_path: Optional[Path] = Path(artifacts_dir_value) if artifacts_dir_value else None
+
         notebook_path: Optional[str] = None
         try:
-            artifacts_dir_value = result.get("artifacts_dir")
-            if not artifacts_dir_value and agent.artifacts_dir:
-                artifacts_dir_value = str(agent.artifacts_dir)
-
-            if artifacts_dir_value:
-                artifacts_dir = Path(artifacts_dir_value)
-                notebook_path = str(artifacts_dir / f"{agent.dataset_name}_pipeline.ipynb")
+            if artifacts_dir_path:
+                notebook_path = str(artifacts_dir_path / f"{agent.dataset_name}_pipeline.ipynb")
                 generate_notebook(
                     execution_history=result.get("execution_history", []),
                     dataset_name=agent.dataset_name,
@@ -266,6 +313,9 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
         except Exception as exc:  # pragma: no cover - best effort only
             logger.exception("Failed to generate notebook", exc_info=exc)
             notebook_path = None
+
+        if artifacts_dir_path:
+            _collect_new_submissions(submissions_before, artifacts_dir_path)
 
         plan = result.get("plan")
         if plan:
@@ -302,29 +352,26 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
 
         artifacts: List[Dict[str, Any]] = []
 
-        artifacts_dir_value = result.get("artifacts_dir")
-        if artifacts_dir_value:
-            artifacts_dir_path = Path(artifacts_dir_value)
-            if artifacts_dir_path.exists():
-                for file_path in artifacts_dir_path.rglob("*"):
-                    if file_path.is_file():
-                        url = _build_public_url(file_path, Config.ARTIFACTS_DIR, "artifacts")
-                        if url:
-                            suffix = file_path.suffix.lower()
-                            if suffix == ".ipynb":
-                                kind = "notebook"
-                            elif suffix == ".csv" and "submission" in file_path.stem.lower():
-                                kind = "submission"
-                            else:
-                                kind = "artifact"
-                            artifacts.append(
-                                {
-                                    "name": file_path.name,
-                                    "url": url,
-                                    "path": str(file_path),
-                                    "kind": kind,
-                                }
-                            )
+        if artifacts_dir_path and artifacts_dir_path.exists():
+            for file_path in artifacts_dir_path.rglob("*"):
+                if file_path.is_file():
+                    url = _build_public_url(file_path, Config.ARTIFACTS_DIR, "artifacts")
+                    if url:
+                        suffix = file_path.suffix.lower()
+                        if suffix == ".ipynb":
+                            kind = "notebook"
+                        elif suffix == ".csv" and "submission" in file_path.stem.lower():
+                            kind = "submission"
+                        else:
+                            kind = "artifact"
+                        artifacts.append(
+                            {
+                                "name": file_path.name,
+                                "url": url,
+                                "path": str(file_path),
+                                "kind": kind,
+                            }
+                        )
 
         log_path_value = result.get("log_path")
         if log_path_value:
