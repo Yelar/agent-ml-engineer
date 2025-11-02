@@ -5,31 +5,35 @@ Last updated: 2025-02-14
 
 Overview
 --------
-The frontend is a minimal notebook-style interface with three pieces that rely on backend integrations:
-- `UploadBar` asks the backend to ingest a CSV and returns a `session_id`.
-- `ChatSidebar` sends chat prompts and expects streamed answers tied to the current session.
-- `NotebookView` subscribes to notebook events over WebSocket and renders them as they arrive.
+The frontend now boots into a single-pane “composer” (similar to ChatGPT/Lovable). Users can attach datasets and send the very first prompt from this screen. As soon as the first prompt is submitted, the layout morphs into the two-column notebook experience.
+
+Key integration points:
+- Dataset ingestion is invoked from both the pre-session composer (attachment icon) and the notebook upload bar.
+- Chat prompts are dispatched by the global send handler and expect backend replies keyed by `session_id`.
+- Notebook updates stream in over WebSocket and are rendered in near-real time.
+- For backend-free demos, the composer exposes a “Try demo data” shortcut that spins up a temporary session and drives the simulated notebook output.
 
 All interactions are keyed by `session_id`. The frontend keeps this value in `App.tsx` and passes it to the chat and notebook views.
 
 File references
 ---------------
 - Frontend entry point: `frontend/src/App.tsx`
-- Upload actions: `frontend/src/components/UploadBar.tsx`
-- Chat interface: `frontend/src/components/ChatSidebar.tsx`
+- Pre-session composer: `frontend/src/components/PreSessionView.tsx`
+- Upload controls (active notebook): `frontend/src/components/UploadBar.tsx`
+- Chat sidebar (active session): `frontend/src/components/ChatSidebar.tsx`
 - Notebook event hook: `frontend/src/hooks/useSessionEvents.ts`
 
 Upload endpoint
 ---------------
 1. URL: `POST http://localhost:8000/upload`
-2. Request body: `multipart/form-data` with a single field named `csv` containing the uploaded file.
+2. Request body: `multipart/form-data` with a field named `csv` for each uploaded file (the UI supports multiple files in one selection).
 3. Expected response:
    ```json
    {
      "session_id": "string"
    }
    ```
-4. The returned `session_id` becomes the source of truth for the rest of the session. When integrating, restore the commented upload logic inside `UploadBar.tsx` (currently stubbed for local testing).
+4. The returned `session_id` is stored globally and shared with the chat and notebook views. Re-uploading (single or multiple files) is treated as a fresh session.
 
 Notebook event stream
 ---------------------
@@ -66,18 +70,20 @@ Chat endpoint
 
 Session lifecycle
 -----------------
-- Uploading a new CSV replaces the `session_id`, clears the chat transcript, and starts listening to a fresh WebSocket channel.
-- If a session does not exist or has expired, return an HTTP error; the frontend will block sending messages until a valid `session_id` exists.
+- Uploading one or more CSVs replaces the `session_id`, clears previous chat history, and resets the notebook view.
+- The notebook panel is hidden until the user sends the first prompt; once a prompt succeeds, notebook events are appended in real time.
+- If a session does not exist or has expired, return an HTTP error; the frontend shows a friendly fallback message and keeps the composer disabled until a dataset is uploaded again.
 
 Local testing tips
 ------------------
 - Use `npm run dev` inside `frontend/` to run the UI during backend development.
-- You can simulate notebook events by connecting to the WebSocket manually and sending JSON messages with unique `event_id`s.
-- When the backend is not available, the current `UploadBar` stub can be used to inject a dummy session id (see `handleUpload` in the component).
+- The frontend currently simulates notebook events after each prompt; once the WebSocket backend is ready, disable the simulation by sending real events.
+- Manual testing of the upload endpoint is easiest via the attachment icon (pre-session) or the upload bar (active notebook). Both paths call the same API.
+- To preview the full flow without a backend, click “Try demo data” in the composer, then send a prompt—the chat reply and notebook cells will use the built-in simulation.
 
 Future improvements
 -------------------
-- Reinstate the real upload request once the backend endpoint is stable.
+- Wire the chat and notebook flows to production endpoints (remove the simulated event generator once sockets are live).
 - Consider adding server-sent heartbeats on the event stream so the client can surface connection issues.
 
 Contact

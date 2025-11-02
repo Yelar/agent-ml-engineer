@@ -19,6 +19,20 @@ python example_run.py
 
 That's it! The agent will build a complete ML pipeline with planning, execution, and Jupyter notebook generation.
 
+### Serve the HTTP & WebSocket API
+
+Run the backend service that powers the Next.js frontend:
+
+```bash
+uvicorn server:app --reload --host 0.0.0.0 --port 8000
+```
+
+Endpoints:
+
+- `POST /upload` — upload one or more datasets (multipart form-data, `files` field)
+- `POST /chat` — start an agent run for the uploaded session
+- `GET ws://<host>:8000/sessions/{session_id}/events` — subscribe to live status, code, plot, and solution events
+
 ## Features
 
 - **Automated ML Pipeline Creation**: Describe your task in natural language, and the agent builds the complete pipeline
