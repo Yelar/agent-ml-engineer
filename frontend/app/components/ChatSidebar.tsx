@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown, { type Components } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import type { ChatMessage } from '@/app/types/chat';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { ChatMessage } from "@/app/types/chat";
 
 type ChatSidebarProps = {
   messages: ChatMessage[];
@@ -18,7 +18,7 @@ export default function ChatSidebar({
   isSending,
   canSend,
 }: ChatSidebarProps) {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const markdownComponents = useMemo<Components>(
     () => ({
@@ -73,13 +73,13 @@ export default function ChatSidebar({
         </blockquote>
       ),
     }),
-    [],
+    []
   );
 
   useEffect(() => {
     if (!canSend) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- reset user input when sending is disabled
-      setDraft('');
+      setDraft("");
     }
   }, [canSend]);
 
@@ -87,7 +87,7 @@ export default function ChatSidebar({
     if (!messagesRef.current) return;
     messagesRef.current.scrollTo({
       top: messagesRef.current.scrollHeight,
-      behavior: 'smooth',
+      behavior: "smooth",
     });
   }, [messages]);
 
@@ -98,14 +98,16 @@ export default function ChatSidebar({
 
     const success = await onSend(trimmed);
     if (success) {
-      setDraft('');
+      setDraft("");
     }
   };
 
   return (
     <aside className="flex h-screen w-full shrink-0 flex-col gap-6 overflow-hidden border-r border-slate-900/80 bg-slate-950/90 px-7 py-8 text-slate-100 backdrop-blur-lg">
       <header className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight text-slate-50">Chat</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-slate-50">
+          Chat
+        </h2>
         <p className="text-sm text-slate-400">
           Ask questions and review agent responses.
         </p>
@@ -127,13 +129,13 @@ export default function ChatSidebar({
           messages.map((message) => (
             <div
               key={message.id}
-              className={`w-fit max-w-full break-words rounded-3xl px-4 py-3 text-sm leading-6 shadow-lg ring-1 ring-inset ${
-                message.role === 'user'
-                  ? 'self-end bg-slate-100 text-slate-900 ring-slate-200/40'
-                  : 'self-start border border-slate-800/80 bg-slate-900/90 text-slate-100 ring-slate-800/40'
+              className={`w-fit max-w-full wrap-break-word rounded-3xl px-4 py-3 text-sm leading-6 shadow-lg ring-1 ring-inset ${
+                message.role === "user"
+                  ? "self-end bg-slate-100 text-slate-900 ring-slate-200/40"
+                  : "self-start border border-slate-800/80 bg-slate-900/90 text-slate-100 ring-slate-800/40"
               } [&>*:first-child]:mt-0`}
-              >
-              {message.role === 'assistant' ? (
+            >
+              {message.role === "assistant" ? (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={markdownComponents}
@@ -194,10 +196,7 @@ export default function ChatSidebar({
               fill="none"
               className="h-5 w-5"
             >
-              <path
-                d="M12 5l-6 6h4v8h4v-8h4l-6-6z"
-                fill="currentColor"
-              />
+              <path d="M12 5l-6 6h4v8h4v-8h4l-6-6z" fill="currentColor" />
             </svg>
           )}
         </button>

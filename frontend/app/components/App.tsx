@@ -35,6 +35,7 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isActive, setIsActive] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [lastPrompt, setLastPrompt] = useState<string>('');
   const [pendingAssistantMessageId, setPendingAssistantMessageId] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<{
     isUploading: boolean;
@@ -118,6 +119,8 @@ export default function App() {
       }
 
       appendMessage('user', trimmed);
+      setLastPrompt(trimmed); // Store the last prompt for prediction
+      
       if (!isActive) {
         setIsActive(true);
       }
@@ -310,7 +313,13 @@ export default function App() {
             isUploading={uploadState.isUploading}
             progress={uploadState.progress}
           />
-          <NotebookView sessionId={sessionId} events={events} isActive={isActive} />
+          <NotebookView 
+            sessionId={sessionId} 
+            events={events} 
+            isActive={isActive} 
+            isSending={isSending}
+            lastPrompt={lastPrompt}
+          />
         </div>
       </div>
     );
