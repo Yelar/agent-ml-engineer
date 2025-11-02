@@ -1,6 +1,8 @@
 'use client';
 
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { ChatMessage } from '@/app/types/chat';
 
 type ChatSidebarProps = {
@@ -74,7 +76,29 @@ export default function ChatSidebar({
                   : 'self-start bg-slate-100 text-slate-900'
               }`}
             >
-              {message.content}
+              {message.role === 'assistant' ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  className="markdown-body text-sm leading-6 text-slate-900 [&>*:first-child]:mt-0"
+                  components={{
+                    a: ({ children, href, ...props }) => (
+                      <a
+                        {...props}
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline decoration-dotted"
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              ) : (
+                <span className="whitespace-pre-wrap">{message.content}</span>
+              )}
             </div>
           ))
         )}

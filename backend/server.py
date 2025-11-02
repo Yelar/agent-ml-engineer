@@ -6,19 +6,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import uuid
+from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from ml_engineer.agent import MLEngineerAgent
 from ml_engineer.config import Config
+from ml_engineer.notebook_generator import generate_notebook
+from ml_engineer.python_executor import get_execution_history
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +104,7 @@ SESSION_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 ARTIFACTS_ROUTE = "/artifacts"
 RUNS_ROUTE = "/runs"
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
 
 app.mount(ARTIFACTS_ROUTE, StaticFiles(directory=str(Config.ARTIFACTS_DIR)), name="artifacts")
 app.mount(RUNS_ROUTE, StaticFiles(directory=str(Config.RUNS_DIR)), name="runs")
@@ -134,7 +140,7 @@ def create_event(event_type: str, payload: Any, step: Optional[str] = None) -> D
     return event
 
 
-def _build_public_url(file_path: Path, base_dir: Path, mount_path: str) -> Optional[str]:
+def _build_public_url(file_path: Path, base_dir: Path, source_label: str) -> Optional[str]:
     """
     Build a publicly accessible URL for a file relative to a mounted directory.
 
@@ -146,8 +152,54 @@ def _build_public_url(file_path: Path, base_dir: Path, mount_path: str) -> Optio
         return None
 
     safe_path = quote(relative_path.as_posix())
-    return f"{mount_path}/{safe_path}"
+    base = PUBLIC_BASE_URL.rstrip("/")
+    return f"{base}/download?source={source_label}&path={safe_path}"
 
+
+async def stream_execution_events(
+    session: SessionState,
+    agent_future: asyncio.Task,
+    poll_interval: float = 0.4,
+) -> None:
+    """Continuously broadcast newly generated execution history entries."""
+    processed = 0
+
+    try:
+        while True:
+            history = get_execution_history()
+
+            while processed < len(history):
+                execution = history[processed]
+                step_index = processed + 1
+
+                code_payload = {
+                    "step_index": step_index,
+                    "code": str(execution.get("code", "") or ""),
+                    "output": str(execution.get("output", "") or ""),
+                    "error": str(execution.get("error", "") or ""),
+                    "success": bool(execution.get("success", False)),
+                }
+                await session.broadcast(create_event("code", code_payload, step=str(step_index)))
+
+                for plot_idx, plot_base64 in enumerate(execution.get("plots", []) or [], start=1):
+                    plot_payload = {
+                        "step_index": step_index,
+                        "plot_index": plot_idx,
+                        "image": plot_base64,
+                        "format": "image/png",
+                    }
+                    await session.broadcast(create_event("plot", plot_payload, step=str(step_index)))
+
+                processed += 1
+
+            if agent_future.done() and processed >= len(history):
+                break
+
+            await asyncio.sleep(poll_interval)
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception("Execution streaming failed", exc_info=exc)
 
 async def run_agent_for_session(session: SessionState, request: ChatRequest) -> None:
     """Execute the ML Engineer agent and stream events back to the client."""
@@ -177,39 +229,49 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
 
         await session.broadcast(create_event("status", {"stage": "running", "prompt": prompt}))
 
+        agent_future: asyncio.Task = asyncio.create_task(asyncio.to_thread(agent.run, prompt))
+        stream_task = asyncio.create_task(stream_execution_events(session, agent_future))
+
         try:
-            result = await asyncio.to_thread(agent.run, prompt)
+            result = await agent_future
         except Exception as exc:  # pragma: no cover - depends on runtime environment
             logger.exception("Agent run failed", exc_info=exc)
             await session.broadcast(create_event("error", {"message": str(exc)}))
             await session.broadcast(create_event("status", {"stage": "failed"}))
+            stream_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await stream_task
             return
+        finally:
+            if not stream_task.done():
+                with suppress(asyncio.CancelledError):
+                    await stream_task
+
+        notebook_path: Optional[str] = None
+        try:
+            artifacts_dir_value = result.get("artifacts_dir")
+            if not artifacts_dir_value and agent.artifacts_dir:
+                artifacts_dir_value = str(agent.artifacts_dir)
+
+            if artifacts_dir_value:
+                artifacts_dir = Path(artifacts_dir_value)
+                notebook_path = str(artifacts_dir / f"{agent.dataset_name}_pipeline.ipynb")
+                generate_notebook(
+                    execution_history=result.get("execution_history", []),
+                    dataset_name=agent.dataset_name,
+                    user_prompt=prompt,
+                    output_path=notebook_path,
+                    solution=result.get("solution"),
+                )
+        except Exception as exc:  # pragma: no cover - best effort only
+            logger.exception("Failed to generate notebook", exc_info=exc)
+            notebook_path = None
 
         plan = result.get("plan")
         if plan:
             await session.broadcast(
                 create_event("plan", {"content": plan, "format": "markdown"})
             )
-
-        history = result.get("execution_history", [])
-        for index, execution in enumerate(history, start=1):
-            code_payload = {
-                "step_index": index,
-                "code": str(execution.get("code", "") or ""),
-                "output": str(execution.get("output", "") or ""),
-                "error": str(execution.get("error", "") or ""),
-                "success": bool(execution.get("success", False)),
-            }
-            await session.broadcast(create_event("code", code_payload, step=str(index)))
-
-            for plot_idx, plot_base64 in enumerate(execution.get("plots", []) or [], start=1):
-                plot_payload = {
-                    "step_index": index,
-                    "plot_index": plot_idx,
-                    "image": plot_base64,
-                    "format": "image/png",
-                }
-                await session.broadcast(create_event("plot", plot_payload, step=str(index)))
 
         solution = result.get("solution")
         if solution:
@@ -246,14 +308,21 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
             if artifacts_dir_path.exists():
                 for file_path in artifacts_dir_path.rglob("*"):
                     if file_path.is_file():
-                        url = _build_public_url(file_path, Config.ARTIFACTS_DIR, ARTIFACTS_ROUTE)
+                        url = _build_public_url(file_path, Config.ARTIFACTS_DIR, "artifacts")
                         if url:
+                            suffix = file_path.suffix.lower()
+                            if suffix == ".ipynb":
+                                kind = "notebook"
+                            elif suffix == ".csv" and "submission" in file_path.stem.lower():
+                                kind = "submission"
+                            else:
+                                kind = "artifact"
                             artifacts.append(
                                 {
                                     "name": file_path.name,
                                     "url": url,
                                     "path": str(file_path),
-                                    "kind": "artifact",
+                                    "kind": kind,
                                 }
                             )
 
@@ -261,7 +330,7 @@ async def run_agent_for_session(session: SessionState, request: ChatRequest) -> 
         if log_path_value:
             log_file = Path(log_path_value)
             if log_file.exists():
-                url = _build_public_url(log_file, Config.RUNS_DIR, RUNS_ROUTE)
+                url = _build_public_url(log_file, Config.RUNS_DIR, "runs")
                 if url:
                     artifacts.append(
                         {
@@ -353,3 +422,30 @@ async def session_events(websocket: WebSocket, session_id: str) -> None:
         logger.debug("WebSocket disconnected for session %s", session_id)
     finally:
         session.unsubscribe(queue)
+
+
+def _resolve_download_path(source: str, relative_path: str) -> Path:
+    if source == "artifacts":
+        base_dir = Config.ARTIFACTS_DIR
+    elif source == "runs":
+        base_dir = Config.RUNS_DIR
+    else:
+        raise HTTPException(status_code=400, detail="Invalid source")
+
+    decoded = Path(unquote(relative_path))
+    file_path = (base_dir / decoded).resolve()
+    try:
+        file_path.relative_to(base_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return file_path
+
+
+@app.get("/download")
+async def download_file(source: str, path: str) -> FileResponse:
+    file_path = _resolve_download_path(source, path)
+    return FileResponse(file_path, filename=file_path.name, media_type="application/octet-stream")
